@@ -119,12 +119,152 @@ configure:3628: checking for style of include used by make
 configure:3656: result: GNU
 configure:3682: checking dependency style of gcc
 configure:3793: result: gcc3
-configure:3811: checking for library containing json_tokener_parse_ex
+configure:3811: checking for library containing estats_read_vars
 configure:3842: gcc -o conftest -g -O2   conftest.c  >&5
-/tmp/ccFpDDHc.o: In function `main':
-/home/rapier/xsight/newcode/conftest.c:22: undefined reference to `json_tokener_parse_ex'
+/tmp/ccE9WRCi.o: In function `main':
+/home/rapier/xsight/newcode/conftest.c:22: undefined reference to `estats_read_vars'
 collect2: error: ld returned 1 exit status
 configure:3842: $? = 1
+configure: failed program was:
+| /* confdefs.h */
+| #define PACKAGE_NAME "insight"
+| #define PACKAGE_TARNAME "insight"
+| #define PACKAGE_VERSION "0.1"
+| #define PACKAGE_STRING "insight 0.1"
+| #define PACKAGE_BUGREPORT "rapier@psc.edu"
+| #define PACKAGE_URL ""
+| #define PACKAGE "insight"
+| #define VERSION "0.1"
+| /* end confdefs.h.  */
+| 
+| /* Override any GCC internal prototype to avoid an error.
+|    Use char because int might match the return type of a GCC
+|    builtin and then its argument prototype would still apply.  */
+| #ifdef __cplusplus
+| extern "C"
+| #endif
+| char estats_read_vars ();
+| int
+| main ()
+| {
+| return estats_read_vars ();
+|   ;
+|   return 0;
+| }
+configure:3842: gcc -o conftest -g -O2   conftest.c -lestats   >&5
+configure:3842: $? = 0
+configure:3859: result: -lestats
+configure:3871: checking for library containing curl_easy_init
+configure:3902: gcc -o conftest -g -O2   conftest.c -lestats  >&5
+/tmp/ccJSIhEn.o: In function `main':
+/home/rapier/xsight/newcode/conftest.c:22: undefined reference to `curl_easy_init'
+collect2: error: ld returned 1 exit status
+configure:3902: $? = 1
+configure: failed program was:
+| /* confdefs.h */
+| #define PACKAGE_NAME "insight"
+| #define PACKAGE_TARNAME "insight"
+| #define PACKAGE_VERSION "0.1"
+| #define PACKAGE_STRING "insight 0.1"
+| #define PACKAGE_BUGREPORT "rapier@psc.edu"
+| #define PACKAGE_URL ""
+| #define PACKAGE "insight"
+| #define VERSION "0.1"
+| /* end confdefs.h.  */
+| 
+| /* Override any GCC internal prototype to avoid an error.
+|    Use char because int might match the return type of a GCC
+|    builtin and then its argument prototype would still apply.  */
+| #ifdef __cplusplus
+| extern "C"
+| #endif
+| char curl_easy_init ();
+| int
+| main ()
+| {
+| return curl_easy_init ();
+|   ;
+|   return 0;
+| }
+configure:3902: gcc -o conftest -g -O2   conftest.c -lcurl  -lestats  >&5
+configure:3902: $? = 0
+configure:3919: result: -lcurl
+configure:3931: checking for library containing config_init
+configure:3962: gcc -o conftest -g -O2   conftest.c -lcurl -lestats  >&5
+/tmp/ccWm3CCu.o: In function `main':
+/home/rapier/xsight/newcode/conftest.c:22: undefined reference to `config_init'
+collect2: error: ld returned 1 exit status
+configure:3962: $? = 1
+configure: failed program was:
+| /* confdefs.h */
+| #define PACKAGE_NAME "insight"
+| #define PACKAGE_TARNAME "insight"
+| #define PACKAGE_VERSION "0.1"
+| #define PACKAGE_STRING "insight 0.1"
+| #define PACKAGE_BUGREPORT "rapier@psc.edu"
+| #define PACKAGE_URL ""
+| #define PACKAGE "insight"
+| #define VERSION "0.1"
+| /* end confdefs.h.  */
+| 
+| /* Override any GCC internal prototype to avoid an error.
+|    Use char because int might match the return type of a GCC
+|    builtin and then its argument prototype would still apply.  */
+| #ifdef __cplusplus
+| extern "C"
+| #endif
+| char config_init ();
+| int
+| main ()
+| {
+| return config_init ();
+|   ;
+|   return 0;
+| }
+configure:3962: gcc -o conftest -g -O2   conftest.c -lconfig  -lcurl -lestats  >&5
+configure:3962: $? = 0
+configure:3979: result: -lconfig
+configure:3991: checking for library containing uuid_generate
+configure:4022: gcc -o conftest -g -O2   conftest.c -lconfig -lcurl -lestats  >&5
+/tmp/ccLK6r3I.o: In function `main':
+/home/rapier/xsight/newcode/conftest.c:22: undefined reference to `uuid_generate'
+collect2: error: ld returned 1 exit status
+configure:4022: $? = 1
+configure: failed program was:
+| /* confdefs.h */
+| #define PACKAGE_NAME "insight"
+| #define PACKAGE_TARNAME "insight"
+| #define PACKAGE_VERSION "0.1"
+| #define PACKAGE_STRING "insight 0.1"
+| #define PACKAGE_BUGREPORT "rapier@psc.edu"
+| #define PACKAGE_URL ""
+| #define PACKAGE "insight"
+| #define VERSION "0.1"
+| /* end confdefs.h.  */
+| 
+| /* Override any GCC internal prototype to avoid an error.
+|    Use char because int might match the return type of a GCC
+|    builtin and then its argument prototype would still apply.  */
+| #ifdef __cplusplus
+| extern "C"
+| #endif
+| char uuid_generate ();
+| int
+| main ()
+| {
+| return uuid_generate ();
+|   ;
+|   return 0;
+| }
+configure:4022: gcc -o conftest -g -O2   conftest.c -luuid  -lconfig -lcurl -lestats  >&5
+configure:4022: $? = 0
+configure:4039: result: -luuid
+configure:4051: checking for library containing json_tokener_parse_ex
+configure:4082: gcc -o conftest -g -O2   conftest.c -luuid -lconfig -lcurl -lestats  >&5
+/tmp/ccNCbme0.o: In function `main':
+/home/rapier/xsight/newcode/conftest.c:22: undefined reference to `json_tokener_parse_ex'
+collect2: error: ld returned 1 exit status
+configure:4082: $? = 1
 configure: failed program was:
 | /* confdefs.h */
 | #define PACKAGE_NAME "insight"
@@ -151,26 +291,26 @@ configure: failed program was:
 |   ;
 |   return 0;
 | }
-configure:3842: gcc -o conftest -g -O2   conftest.c -ljson-c   >&5
-configure:3842: $? = 0
-configure:3859: result: -ljson-c
-configure:3871: checking for json_tokener_parse_ex in -ljson-c
-configure:3896: gcc -o conftest -g -O2   conftest.c -ljson-c  -ljson-c  >&5
-configure:3896: $? = 0
-configure:3905: result: yes
-configure:3919: checking for json_tokener_parse_ex in -ljson
-configure:3944: gcc -o conftest -g -O2   conftest.c -ljson  -ljson-c  >&5
-configure:3944: $? = 0
-configure:3953: result: yes
-configure:3980: checking how to run the C preprocessor
-configure:4011: gcc -E  conftest.c
-configure:4011: $? = 0
-configure:4025: gcc -E  conftest.c
+configure:4082: gcc -o conftest -g -O2   conftest.c -ljson-c  -luuid -lconfig -lcurl -lestats  >&5
+configure:4082: $? = 0
+configure:4099: result: -ljson-c
+configure:4111: checking for json_tokener_parse_ex in -ljson-c
+configure:4136: gcc -o conftest -g -O2   conftest.c -ljson-c  -ljson-c -luuid -lconfig -lcurl -lestats  >&5
+configure:4136: $? = 0
+configure:4145: result: yes
+configure:4159: checking for json_tokener_parse_ex in -ljson
+configure:4184: gcc -o conftest -g -O2   conftest.c -ljson  -ljson-c -luuid -lconfig -lcurl -lestats  >&5
+configure:4184: $? = 0
+configure:4193: result: yes
+configure:4220: checking how to run the C preprocessor
+configure:4251: gcc -E  conftest.c
+configure:4251: $? = 0
+configure:4265: gcc -E  conftest.c
 conftest.c:12:28: fatal error: ac_nonexistent.h: No such file or directory
  #include <ac_nonexistent.h>
                             ^
 compilation terminated.
-configure:4025: $? = 1
+configure:4265: $? = 1
 configure: failed program was:
 | /* confdefs.h */
 | #define PACKAGE_NAME "insight"
@@ -184,15 +324,15 @@ configure: failed program was:
 | #define HAVE_LIBJSONC 1
 | /* end confdefs.h.  */
 | #include <ac_nonexistent.h>
-configure:4050: result: gcc -E
-configure:4070: gcc -E  conftest.c
-configure:4070: $? = 0
-configure:4084: gcc -E  conftest.c
+configure:4290: result: gcc -E
+configure:4310: gcc -E  conftest.c
+configure:4310: $? = 0
+configure:4324: gcc -E  conftest.c
 conftest.c:12:28: fatal error: ac_nonexistent.h: No such file or directory
  #include <ac_nonexistent.h>
                             ^
 compilation terminated.
-configure:4084: $? = 1
+configure:4324: $? = 1
 configure: failed program was:
 | /* confdefs.h */
 | #define PACKAGE_NAME "insight"
@@ -206,123 +346,173 @@ configure: failed program was:
 | #define HAVE_LIBJSONC 1
 | /* end confdefs.h.  */
 | #include <ac_nonexistent.h>
-configure:4113: checking for grep that handles long lines and -e
-configure:4171: result: /usr/bin/grep
-configure:4176: checking for egrep
-configure:4238: result: /usr/bin/grep -E
-configure:4243: checking for ANSI C header files
-configure:4263: gcc -c -g -O2  conftest.c >&5
-configure:4263: $? = 0
-configure:4336: gcc -o conftest -g -O2   conftest.c -ljson-c  >&5
-configure:4336: $? = 0
-configure:4336: ./conftest
-configure:4336: $? = 0
-configure:4347: result: yes
-configure:4360: checking for sys/types.h
-configure:4360: gcc -c -g -O2  conftest.c >&5
-configure:4360: $? = 0
-configure:4360: result: yes
-configure:4360: checking for sys/stat.h
-configure:4360: gcc -c -g -O2  conftest.c >&5
-configure:4360: $? = 0
-configure:4360: result: yes
-configure:4360: checking for stdlib.h
-configure:4360: gcc -c -g -O2  conftest.c >&5
-configure:4360: $? = 0
-configure:4360: result: yes
-configure:4360: checking for string.h
-configure:4360: gcc -c -g -O2  conftest.c >&5
-configure:4360: $? = 0
-configure:4360: result: yes
-configure:4360: checking for memory.h
-configure:4360: gcc -c -g -O2  conftest.c >&5
-configure:4360: $? = 0
-configure:4360: result: yes
-configure:4360: checking for strings.h
-configure:4360: gcc -c -g -O2  conftest.c >&5
-configure:4360: $? = 0
-configure:4360: result: yes
-configure:4360: checking for inttypes.h
-configure:4360: gcc -c -g -O2  conftest.c >&5
-configure:4360: $? = 0
-configure:4360: result: yes
-configure:4360: checking for stdint.h
-configure:4360: gcc -c -g -O2  conftest.c >&5
-configure:4360: $? = 0
-configure:4360: result: yes
-configure:4360: checking for unistd.h
-configure:4360: gcc -c -g -O2  conftest.c >&5
-configure:4360: $? = 0
-configure:4360: result: yes
-configure:4375: checking arpa/inet.h usability
-configure:4375: gcc -c -g -O2  conftest.c >&5
-configure:4375: $? = 0
-configure:4375: result: yes
-configure:4375: checking arpa/inet.h presence
-configure:4375: gcc -E  conftest.c
-configure:4375: $? = 0
-configure:4375: result: yes
-configure:4375: checking for arpa/inet.h
-configure:4375: result: yes
-configure:4375: checking for inttypes.h
-configure:4375: result: yes
-configure:4375: checking netinet/in.h usability
-configure:4375: gcc -c -g -O2  conftest.c >&5
-configure:4375: $? = 0
-configure:4375: result: yes
-configure:4375: checking netinet/in.h presence
-configure:4375: gcc -E  conftest.c
-configure:4375: $? = 0
-configure:4375: result: yes
-configure:4375: checking for netinet/in.h
-configure:4375: result: yes
-configure:4375: checking stddef.h usability
-configure:4375: gcc -c -g -O2  conftest.c >&5
-configure:4375: $? = 0
-configure:4375: result: yes
-configure:4375: checking stddef.h presence
-configure:4375: gcc -E  conftest.c
-configure:4375: $? = 0
-configure:4375: result: yes
-configure:4375: checking for stddef.h
-configure:4375: result: yes
-configure:4375: checking for stdint.h
-configure:4375: result: yes
-configure:4375: checking for stdlib.h
-configure:4375: result: yes
-configure:4375: checking for string.h
-configure:4375: result: yes
-configure:4375: checking sys/param.h usability
-configure:4375: gcc -c -g -O2  conftest.c >&5
-configure:4375: $? = 0
-configure:4375: result: yes
-configure:4375: checking sys/param.h presence
-configure:4375: gcc -E  conftest.c
-configure:4375: $? = 0
-configure:4375: result: yes
-configure:4375: checking for sys/param.h
-configure:4375: result: yes
-configure:4375: checking sys/socket.h usability
-configure:4375: gcc -c -g -O2  conftest.c >&5
-configure:4375: $? = 0
-configure:4375: result: yes
-configure:4375: checking sys/socket.h presence
-configure:4375: gcc -E  conftest.c
-configure:4375: $? = 0
-configure:4375: result: yes
-configure:4375: checking for sys/socket.h
-configure:4375: result: yes
-configure:4375: checking for unistd.h
-configure:4375: result: yes
-configure:4387: checking for size_t
-configure:4387: gcc -c -g -O2  conftest.c >&5
-configure:4387: $? = 0
-configure:4387: gcc -c -g -O2  conftest.c >&5
+configure:4353: checking for grep that handles long lines and -e
+configure:4411: result: /usr/bin/grep
+configure:4416: checking for egrep
+configure:4478: result: /usr/bin/grep -E
+configure:4483: checking for ANSI C header files
+configure:4503: gcc -c -g -O2  conftest.c >&5
+configure:4503: $? = 0
+configure:4576: gcc -o conftest -g -O2   conftest.c -ljson-c -luuid -lconfig -lcurl -lestats  >&5
+configure:4576: $? = 0
+configure:4576: ./conftest
+configure:4576: $? = 0
+configure:4587: result: yes
+configure:4600: checking for sys/types.h
+configure:4600: gcc -c -g -O2  conftest.c >&5
+configure:4600: $? = 0
+configure:4600: result: yes
+configure:4600: checking for sys/stat.h
+configure:4600: gcc -c -g -O2  conftest.c >&5
+configure:4600: $? = 0
+configure:4600: result: yes
+configure:4600: checking for stdlib.h
+configure:4600: gcc -c -g -O2  conftest.c >&5
+configure:4600: $? = 0
+configure:4600: result: yes
+configure:4600: checking for string.h
+configure:4600: gcc -c -g -O2  conftest.c >&5
+configure:4600: $? = 0
+configure:4600: result: yes
+configure:4600: checking for memory.h
+configure:4600: gcc -c -g -O2  conftest.c >&5
+configure:4600: $? = 0
+configure:4600: result: yes
+configure:4600: checking for strings.h
+configure:4600: gcc -c -g -O2  conftest.c >&5
+configure:4600: $? = 0
+configure:4600: result: yes
+configure:4600: checking for inttypes.h
+configure:4600: gcc -c -g -O2  conftest.c >&5
+configure:4600: $? = 0
+configure:4600: result: yes
+configure:4600: checking for stdint.h
+configure:4600: gcc -c -g -O2  conftest.c >&5
+configure:4600: $? = 0
+configure:4600: result: yes
+configure:4600: checking for unistd.h
+configure:4600: gcc -c -g -O2  conftest.c >&5
+configure:4600: $? = 0
+configure:4600: result: yes
+configure:4615: checking arpa/inet.h usability
+configure:4615: gcc -c -g -O2  conftest.c >&5
+configure:4615: $? = 0
+configure:4615: result: yes
+configure:4615: checking arpa/inet.h presence
+configure:4615: gcc -E  conftest.c
+configure:4615: $? = 0
+configure:4615: result: yes
+configure:4615: checking for arpa/inet.h
+configure:4615: result: yes
+configure:4615: checking for inttypes.h
+configure:4615: result: yes
+configure:4615: checking netinet/in.h usability
+configure:4615: gcc -c -g -O2  conftest.c >&5
+configure:4615: $? = 0
+configure:4615: result: yes
+configure:4615: checking netinet/in.h presence
+configure:4615: gcc -E  conftest.c
+configure:4615: $? = 0
+configure:4615: result: yes
+configure:4615: checking for netinet/in.h
+configure:4615: result: yes
+configure:4615: checking stddef.h usability
+configure:4615: gcc -c -g -O2  conftest.c >&5
+configure:4615: $? = 0
+configure:4615: result: yes
+configure:4615: checking stddef.h presence
+configure:4615: gcc -E  conftest.c
+configure:4615: $? = 0
+configure:4615: result: yes
+configure:4615: checking for stddef.h
+configure:4615: result: yes
+configure:4615: checking for stdint.h
+configure:4615: result: yes
+configure:4615: checking for stdlib.h
+configure:4615: result: yes
+configure:4615: checking for string.h
+configure:4615: result: yes
+configure:4615: checking sys/param.h usability
+configure:4615: gcc -c -g -O2  conftest.c >&5
+configure:4615: $? = 0
+configure:4615: result: yes
+configure:4615: checking sys/param.h presence
+configure:4615: gcc -E  conftest.c
+configure:4615: $? = 0
+configure:4615: result: yes
+configure:4615: checking for sys/param.h
+configure:4615: result: yes
+configure:4615: checking sys/socket.h usability
+configure:4615: gcc -c -g -O2  conftest.c >&5
+configure:4615: $? = 0
+configure:4615: result: yes
+configure:4615: checking sys/socket.h presence
+configure:4615: gcc -E  conftest.c
+configure:4615: $? = 0
+configure:4615: result: yes
+configure:4615: checking for sys/socket.h
+configure:4615: result: yes
+configure:4615: checking for unistd.h
+configure:4615: result: yes
+configure:4628: checking uuid/uuid.h usability
+configure:4628: gcc -c -g -O2  conftest.c >&5
+configure:4628: $? = 0
+configure:4628: result: yes
+configure:4628: checking uuid/uuid.h presence
+configure:4628: gcc -E  conftest.c
+configure:4628: $? = 0
+configure:4628: result: yes
+configure:4628: checking for uuid/uuid.h
+configure:4628: result: yes
+configure:4628: checking estats/estats.h usability
+configure:4628: gcc -c -g -O2  conftest.c >&5
+configure:4628: $? = 0
+configure:4628: result: yes
+configure:4628: checking estats/estats.h presence
+configure:4628: gcc -E  conftest.c
+configure:4628: $? = 0
+configure:4628: result: yes
+configure:4628: checking for estats/estats.h
+configure:4628: result: yes
+configure:4628: checking curl/curl.h usability
+configure:4628: gcc -c -g -O2  conftest.c >&5
+configure:4628: $? = 0
+configure:4628: result: yes
+configure:4628: checking curl/curl.h presence
+configure:4628: gcc -E  conftest.c
+configure:4628: $? = 0
+configure:4628: result: yes
+configure:4628: checking for curl/curl.h
+configure:4628: result: yes
+configure:4628: checking libconfig.h usability
+configure:4628: gcc -c -g -O2  conftest.c >&5
+configure:4628: $? = 0
+configure:4628: result: yes
+configure:4628: checking libconfig.h presence
+configure:4628: gcc -E  conftest.c
+configure:4628: $? = 0
+configure:4628: result: yes
+configure:4628: checking for libconfig.h
+configure:4628: result: yes
+configure:4628: checking netdb.h usability
+configure:4628: gcc -c -g -O2  conftest.c >&5
+configure:4628: $? = 0
+configure:4628: result: yes
+configure:4628: checking netdb.h presence
+configure:4628: gcc -E  conftest.c
+configure:4628: $? = 0
+configure:4628: result: yes
+configure:4628: checking for netdb.h
+configure:4628: result: yes
+configure:4640: checking for size_t
+configure:4640: gcc -c -g -O2  conftest.c >&5
+configure:4640: $? = 0
+configure:4640: gcc -c -g -O2  conftest.c >&5
 conftest.c: In function 'main':
-conftest.c:68:21: error: expected expression before ')' token
+conftest.c:73:21: error: expected expression before ')' token
  if (sizeof ((size_t)))
                      ^
-configure:4387: $? = 1
+configure:4640: $? = 1
 configure: failed program was:
 | /* confdefs.h */
 | #define PACKAGE_NAME "insight"
@@ -354,6 +544,11 @@ configure: failed program was:
 | #define HAVE_SYS_PARAM_H 1
 | #define HAVE_SYS_SOCKET_H 1
 | #define HAVE_UNISTD_H 1
+| #define HAVE_UUID_UUID_H 1
+| #define HAVE_ESTATS_ESTATS_H 1
+| #define HAVE_CURL_CURL_H 1
+| #define HAVE_LIBCONFIG_H 1
+| #define HAVE_NETDB_H 1
 | /* end confdefs.h.  */
 | #include <stdio.h>
 | #ifdef HAVE_SYS_TYPES_H
@@ -396,34 +591,34 @@ configure: failed program was:
 |   ;
 |   return 0;
 | }
-configure:4387: result: yes
-configure:4398: checking for uid_t in sys/types.h
-configure:4417: result: yes
-configure:4428: checking for uint16_t
-configure:4428: gcc -c -g -O2  conftest.c >&5
-configure:4428: $? = 0
-configure:4428: result: yes
-configure:4440: checking for uint32_t
-configure:4440: gcc -c -g -O2  conftest.c >&5
-configure:4440: $? = 0
-configure:4440: result: yes
-configure:4454: checking for uint64_t
-configure:4454: gcc -c -g -O2  conftest.c >&5
-configure:4454: $? = 0
-configure:4454: result: yes
-configure:4468: checking for uint8_t
-configure:4468: gcc -c -g -O2  conftest.c >&5
-configure:4468: $? = 0
-configure:4468: result: yes
-configure:4482: checking for ptrdiff_t
-configure:4482: gcc -c -g -O2  conftest.c >&5
-configure:4482: $? = 0
-configure:4482: gcc -c -g -O2  conftest.c >&5
+configure:4640: result: yes
+configure:4651: checking for uid_t in sys/types.h
+configure:4670: result: yes
+configure:4681: checking for uint16_t
+configure:4681: gcc -c -g -O2  conftest.c >&5
+configure:4681: $? = 0
+configure:4681: result: yes
+configure:4693: checking for uint32_t
+configure:4693: gcc -c -g -O2  conftest.c >&5
+configure:4693: $? = 0
+configure:4693: result: yes
+configure:4707: checking for uint64_t
+configure:4707: gcc -c -g -O2  conftest.c >&5
+configure:4707: $? = 0
+configure:4707: result: yes
+configure:4721: checking for uint8_t
+configure:4721: gcc -c -g -O2  conftest.c >&5
+configure:4721: $? = 0
+configure:4721: result: yes
+configure:4735: checking for ptrdiff_t
+configure:4735: gcc -c -g -O2  conftest.c >&5
+configure:4735: $? = 0
+configure:4735: gcc -c -g -O2  conftest.c >&5
 conftest.c: In function 'main':
-conftest.c:68:24: error: expected expression before ')' token
+conftest.c:73:24: error: expected expression before ')' token
  if (sizeof ((ptrdiff_t)))
                         ^
-configure:4482: $? = 1
+configure:4735: $? = 1
 configure: failed program was:
 | /* confdefs.h */
 | #define PACKAGE_NAME "insight"
@@ -455,6 +650,11 @@ configure: failed program was:
 | #define HAVE_SYS_PARAM_H 1
 | #define HAVE_SYS_SOCKET_H 1
 | #define HAVE_UNISTD_H 1
+| #define HAVE_UUID_UUID_H 1
+| #define HAVE_ESTATS_ESTATS_H 1
+| #define HAVE_CURL_CURL_H 1
+| #define HAVE_LIBCONFIG_H 1
+| #define HAVE_NETDB_H 1
 | /* end confdefs.h.  */
 | #include <stdio.h>
 | #ifdef HAVE_SYS_TYPES_H
@@ -497,53 +697,53 @@ configure: failed program was:
 |   ;
 |   return 0;
 | }
-configure:4482: result: yes
-configure:4496: checking for stdlib.h
-configure:4496: result: yes
-configure:4506: checking for GNU libc compatible malloc
-configure:4530: gcc -o conftest -g -O2   conftest.c -ljson-c  >&5
-configure:4530: $? = 0
-configure:4530: ./conftest
-configure:4530: $? = 0
-configure:4540: result: yes
-configure:4564: checking for memmove
-configure:4564: gcc -o conftest -g -O2   conftest.c -ljson-c  >&5
-conftest.c:58:6: warning: conflicting types for built-in function 'memmove' [enabled by default]
+configure:4735: result: yes
+configure:4749: checking for stdlib.h
+configure:4749: result: yes
+configure:4759: checking for GNU libc compatible malloc
+configure:4783: gcc -o conftest -g -O2   conftest.c -ljson-c -luuid -lconfig -lcurl -lestats  >&5
+configure:4783: $? = 0
+configure:4783: ./conftest
+configure:4783: $? = 0
+configure:4793: result: yes
+configure:4817: checking for memmove
+configure:4817: gcc -o conftest -g -O2   conftest.c -ljson-c -luuid -lconfig -lcurl -lestats  >&5
+conftest.c:63:6: warning: conflicting types for built-in function 'memmove' [enabled by default]
  char memmove ();
       ^
-configure:4564: $? = 0
-configure:4564: result: yes
-configure:4564: checking for memset
-configure:4564: gcc -o conftest -g -O2   conftest.c -ljson-c  >&5
-conftest.c:59:6: warning: conflicting types for built-in function 'memset' [enabled by default]
+configure:4817: $? = 0
+configure:4817: result: yes
+configure:4817: checking for memset
+configure:4817: gcc -o conftest -g -O2   conftest.c -ljson-c -luuid -lconfig -lcurl -lestats  >&5
+conftest.c:64:6: warning: conflicting types for built-in function 'memset' [enabled by default]
  char memset ();
       ^
-configure:4564: $? = 0
-configure:4564: result: yes
-configure:4564: checking for strchr
-configure:4564: gcc -o conftest -g -O2   conftest.c -ljson-c  >&5
-conftest.c:60:6: warning: conflicting types for built-in function 'strchr' [enabled by default]
+configure:4817: $? = 0
+configure:4817: result: yes
+configure:4817: checking for strchr
+configure:4817: gcc -o conftest -g -O2   conftest.c -ljson-c -luuid -lconfig -lcurl -lestats  >&5
+conftest.c:65:6: warning: conflicting types for built-in function 'strchr' [enabled by default]
  char strchr ();
       ^
-configure:4564: $? = 0
-configure:4564: result: yes
-configure:4564: checking for strdup
-configure:4564: gcc -o conftest -g -O2   conftest.c -ljson-c  >&5
-conftest.c:61:6: warning: conflicting types for built-in function 'strdup' [enabled by default]
+configure:4817: $? = 0
+configure:4817: result: yes
+configure:4817: checking for strdup
+configure:4817: gcc -o conftest -g -O2   conftest.c -ljson-c -luuid -lconfig -lcurl -lestats  >&5
+conftest.c:66:6: warning: conflicting types for built-in function 'strdup' [enabled by default]
  char strdup ();
       ^
-configure:4564: $? = 0
-configure:4564: result: yes
-configure:4564: checking for strstr
-configure:4564: gcc -o conftest -g -O2   conftest.c -ljson-c  >&5
-conftest.c:62:6: warning: conflicting types for built-in function 'strstr' [enabled by default]
+configure:4817: $? = 0
+configure:4817: result: yes
+configure:4817: checking for strstr
+configure:4817: gcc -o conftest -g -O2   conftest.c -ljson-c -luuid -lconfig -lcurl -lestats  >&5
+conftest.c:67:6: warning: conflicting types for built-in function 'strstr' [enabled by default]
  char strstr ();
       ^
-configure:4564: $? = 0
-configure:4564: result: yes
-configure:4685: checking that generated files are newer than configure
-configure:4691: result: done
-configure:4722: creating ./config.status
+configure:4817: $? = 0
+configure:4817: result: yes
+configure:4938: checking that generated files are newer than configure
+configure:4944: result: done
+configure:4975: creating ./config.status
 
 ## ---------------------- ##
 ## Running config.status. ##
@@ -560,10 +760,9 @@ generated by GNU Autoconf 2.69.  Invocation command line was
 
 on darksagan.psc.edu
 
-config.status:875: creating Makefile
-config.status:875: creating config.h
-config.status:1056: config.h is unchanged
-config.status:1104: executing depfiles commands
+config.status:880: creating Makefile
+config.status:880: creating config.h
+config.status:1109: executing depfiles commands
 
 ## ---------------- ##
 ## Cache variables. ##
@@ -599,8 +798,12 @@ ac_cv_func_strchr=yes
 ac_cv_func_strdup=yes
 ac_cv_func_strstr=yes
 ac_cv_header_arpa_inet_h=yes
+ac_cv_header_curl_curl_h=yes
+ac_cv_header_estats_estats_h=yes
 ac_cv_header_inttypes_h=yes
+ac_cv_header_libconfig_h=yes
 ac_cv_header_memory_h=yes
+ac_cv_header_netdb_h=yes
 ac_cv_header_netinet_in_h=yes
 ac_cv_header_stdc=yes
 ac_cv_header_stddef_h=yes
@@ -613,6 +816,7 @@ ac_cv_header_sys_socket_h=yes
 ac_cv_header_sys_stat_h=yes
 ac_cv_header_sys_types_h=yes
 ac_cv_header_unistd_h=yes
+ac_cv_header_uuid_uuid_h=yes
 ac_cv_lib_json_c_json_tokener_parse_ex=yes
 ac_cv_lib_json_json_tokener_parse_ex=yes
 ac_cv_objext=o
@@ -626,7 +830,11 @@ ac_cv_prog_ac_ct_CC=gcc
 ac_cv_prog_cc_c89=
 ac_cv_prog_cc_g=yes
 ac_cv_prog_make_make_set=yes
+ac_cv_search_config_init=-lconfig
+ac_cv_search_curl_easy_init=-lcurl
+ac_cv_search_estats_read_vars=-lestats
 ac_cv_search_json_tokener_parse_ex=-ljson-c
+ac_cv_search_uuid_generate=-luuid
 ac_cv_type_ptrdiff_t=yes
 ac_cv_type_size_t=yes
 ac_cv_type_uid_t=yes
@@ -670,7 +878,7 @@ INSTALL_SCRIPT='${INSTALL}'
 INSTALL_STRIP_PROGRAM='$(install_sh) -c -s'
 LDFLAGS=''
 LIBOBJS=''
-LIBS='-ljson-c '
+LIBS='-ljson-c -luuid -lconfig -lcurl -lestats '
 LINK_LIBJSONC_FALSE='#'
 LINK_LIBJSONC_TRUE=''
 LINK_LIBJSON_FALSE='#'
@@ -765,6 +973,11 @@ target_alias=''
 #define HAVE_SYS_PARAM_H 1
 #define HAVE_SYS_SOCKET_H 1
 #define HAVE_UNISTD_H 1
+#define HAVE_UUID_UUID_H 1
+#define HAVE_ESTATS_ESTATS_H 1
+#define HAVE_CURL_CURL_H 1
+#define HAVE_LIBCONFIG_H 1
+#define HAVE_NETDB_H 1
 #define HAVE_PTRDIFF_T 1
 #define HAVE_STDLIB_H 1
 #define HAVE_MALLOC 1

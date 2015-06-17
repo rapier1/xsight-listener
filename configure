@@ -3808,6 +3808,246 @@ fi
 
 # Checks for libraries.
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing estats_read_vars" >&5
+$as_echo_n "checking for library containing estats_read_vars... " >&6; }
+if ${ac_cv_search_estats_read_vars+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char estats_read_vars ();
+int
+main ()
+{
+return estats_read_vars ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' estats; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_estats_read_vars=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_estats_read_vars+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_estats_read_vars+:} false; then :
+
+else
+  ac_cv_search_estats_read_vars=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_estats_read_vars" >&5
+$as_echo "$ac_cv_search_estats_read_vars" >&6; }
+ac_res=$ac_cv_search_estats_read_vars
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+else
+
+	echo "libestats (from Web10g) is missing."
+        exit -1
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing curl_easy_init" >&5
+$as_echo_n "checking for library containing curl_easy_init... " >&6; }
+if ${ac_cv_search_curl_easy_init+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char curl_easy_init ();
+int
+main ()
+{
+return curl_easy_init ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' curl; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_curl_easy_init=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_curl_easy_init+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_curl_easy_init+:} false; then :
+
+else
+  ac_cv_search_curl_easy_init=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_curl_easy_init" >&5
+$as_echo "$ac_cv_search_curl_easy_init" >&6; }
+ac_res=$ac_cv_search_curl_easy_init
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+else
+
+	echo "libcurl is missing."
+        exit -1
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing config_init" >&5
+$as_echo_n "checking for library containing config_init... " >&6; }
+if ${ac_cv_search_config_init+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char config_init ();
+int
+main ()
+{
+return config_init ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' config; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_config_init=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_config_init+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_config_init+:} false; then :
+
+else
+  ac_cv_search_config_init=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_config_init" >&5
+$as_echo "$ac_cv_search_config_init" >&6; }
+ac_res=$ac_cv_search_config_init
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+else
+
+	echo "libconfig is missing."
+        exit -1
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing uuid_generate" >&5
+$as_echo_n "checking for library containing uuid_generate... " >&6; }
+if ${ac_cv_search_uuid_generate+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char uuid_generate ();
+int
+main ()
+{
+return uuid_generate ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' uuid; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_uuid_generate=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_uuid_generate+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_uuid_generate+:} false; then :
+
+else
+  ac_cv_search_uuid_generate=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_uuid_generate" >&5
+$as_echo "$ac_cv_search_uuid_generate" >&6; }
+ac_res=$ac_cv_search_uuid_generate
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+else
+
+	echo "libuuid is missing."
+        exit -1
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing json_tokener_parse_ex" >&5
 $as_echo_n "checking for library containing json_tokener_parse_ex... " >&6; }
 if ${ac_cv_search_json_tokener_parse_ex+:} false; then :
@@ -3864,7 +4104,7 @@ if test "$ac_res" != no; then :
 
 else
 
-	echo "JSON-C (fedoa) and/or LibJson (debian) library ) is missing."
+	echo "JSON-C (fedora) and/or LibJson (debian) library ) is missing."
 	exit -1
 fi
 
@@ -4370,6 +4610,19 @@ done
 
 
 for ac_header in arpa/inet.h inttypes.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/param.h sys/socket.h unistd.h
+do :
+  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
+if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+
+done
+
+for ac_header in uuid/uuid.h estats/estats.h curl/curl.h libconfig.h netdb.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"

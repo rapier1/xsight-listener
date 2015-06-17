@@ -13,8 +13,20 @@ LDFLAGS="$LDFLAGS"
 AC_PROG_CC
 
 # Checks for libraries.
+AC_SEARCH_LIBS([estats_read_vars], [estats], [], [
+	echo "libestats (from Web10g) is missing."
+        exit -1])
+AC_SEARCH_LIBS([curl_easy_init], [curl], [], [
+	echo "libcurl is missing."
+        exit -1])
+AC_SEARCH_LIBS([config_init], [config], [], [
+	echo "libconfig is missing."
+        exit -1])
+AC_SEARCH_LIBS([uuid_generate], [uuid], [], [
+	echo "libuuid is missing."
+        exit -1])
 AC_SEARCH_LIBS([json_tokener_parse_ex], [json-c json], [], [
-	echo "JSON-C (fedoa) and/or LibJson (debian) library ) is missing."
+	echo "JSON-C (fedora) and/or LibJson (debian) library ) is missing."
 	exit -1])
 AC_CHECK_LIB([json-c], [json_tokener_parse_ex], [LIBJSONC=true], [], [])
 AM_CONDITIONAL([LINK_LIBJSONC], [test x$LIBJSONC = xtrue])
@@ -27,6 +39,7 @@ fi
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h inttypes.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/param.h sys/socket.h unistd.h])
+AC_CHECK_HEADERS([uuid/uuid.h estats/estats.h curl/curl.h libconfig.h netdb.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
