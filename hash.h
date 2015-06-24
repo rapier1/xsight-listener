@@ -15,24 +15,24 @@
  *
  */
 
-#ifndef MAIN_H
-#define MAIN_H
-#define GNU_SOURCE 1
-#include <sys/stat.h>
-#include "scripts.h"
-#include "curl/curl.h"
+#ifndef HASH_H
+#define HASH_H
+#include <uuid/uuid.h>
+#include "uthash.h"
 #include "debug.h"
-#include "hash.h"
-#include "json_influx.h"
-#include "parse.h"
-#include "version.h"
+#include "scripts.h"
 
-typedef struct CmdLineCID {
+typedef struct ConnectionHash {
 	int cid;
-	char cmdline[256];
+	int lastpoll;
+	int seen;
+	uuid_t flowid;
 	UT_hash_handle hh;
-} CmdLineCID;
+} ConnectionHash;
 
+struct ConnectionHash *find_cid (int);
+struct ConnectionHash *add_connection (struct estats_connection_info *);
+int delete_flow (int);
+void clear_hash();
+int count_hash();
 #endif
-
-

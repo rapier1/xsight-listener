@@ -19,7 +19,7 @@
  * from the websocket and turning those request, when necessary, into 
  * structures needed to filter the tcpdata
  */
-
+#define _GNU_SOURCE 1
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -79,7 +79,7 @@ bool cidr_match(int addr, int net, uint8_t bits) {
  * so some filters return 1 and some return 0 depending on what we want to squelch
  */
 int filter_ips( char* local, char* remote, char** ips, int index) {
-	int i, ret, j = 0;
+	int i, ret = 0;
 	int result = 1;
 	struct addrinfo hint;
 	struct addrinfo *locres = 0;
@@ -91,14 +91,11 @@ int filter_ips( char* local, char* remote, char** ips, int index) {
 	struct sockaddr_in6 *locaddr6 = NULL;
 	struct sockaddr_in6 *remaddr6 = NULL;
 	struct sockaddr_in6 *testaddr6 = NULL;
-	char *ip[2];
-	char *token;
+	char *ip;
+	char *mask;
 	char *tmpip;
 	int bits = 32; // the default mask if they don't include a mask
 
-	ip[0] = malloc(100); // ipaddress oversized because maybe we do ipv6 at some point? 
-	ip[1] = malloc(20); // mask
-	
 	memset(&hint, '\0', sizeof hint);
 	
 	hint.ai_family = AF_UNSPEC;
@@ -128,44 +125,38 @@ int filter_ips( char* local, char* remote, char** ips, int index) {
 		freeaddrinfo(locres);
 		return 1;
 	}
+
 	if (locres->ai_family == AF_INET)  
 		locaddr = (struct sockaddr_in*)locres->ai_addr;
 	else 
 		locaddr6 = (struct sockaddr_in6*)locres->ai_addr;
 
 	for (i = 0; i < index; i++) {
-		j = 0; // reset the index for the ip[]
+
+		/* use strndupa because strdup and free was causing odd errors in valgrind
+		 * i think this is because of what was happening with the strtok
+		 */
+		tmpip = strndupa(ips[i], strlen(ips[i]));
 
 		// we need to examine the incoming address to see if it has a slash
-		// indicating that it is being masked. if so assign it to a temporary
-		// char because strtok is destructive
-		tmpip = strdup(ips[i]);
-		
-		// get the initial token
-		token = strtok(tmpip, "/");
-		
-		// we should only have at most two items 
-		// so pay attention to the NULL and the index
-		while (token != NULL && j < 2) {
-			// copy the ip into the 0th place and the mask into the 1st
-			strcpy(ip[j],token);
-			token = strtok(NULL, "/");
-			j++;
-		}
-
-		free(tmpip);		
+		// indicating that it is being masked. 
+		ip = strtok(tmpip, "/");
+		mask = strtok(NULL, "\0");
 
 		// convert whatever we have into an int
 		// this is *only* for ipv4.
-		bits = atoi(ip[1]);
+		if (mask != NULL) {
+			bits = atoi(mask);
+		}
+		
 		// if the int is outside of the range then set it to the narrowest possible
 		// as you can see we aren't supporting a /0 mask. TODO: fix it so we can. 
 		if (bits == 0 || bits > 32) {
 			bits = 32;
 		}
-		
+
 		// go through the above for each ip address we are testing against
-		ret = getaddrinfo(ip[0], NULL, &hint, &testres);
+		ret = getaddrinfo(ip, NULL, &hint, &testres);
 		if (ret != 0) {
 			fprintf(stderr, "getaddrinfo: %s (likely an invalid user defined ip address)\n", 
 				gai_strerror(ret));
@@ -220,8 +211,6 @@ int filter_ips( char* local, char* remote, char** ips, int index) {
 Cleanup:
 	freeaddrinfo(remres);
 	freeaddrinfo(locres);
-	free(ip[0]);
-	free(ip[1]);
 	return result;
 }
 

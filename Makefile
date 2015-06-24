@@ -95,7 +95,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_xsight_OBJECTS = xsight.$(OBJEXT) libinflux.$(OBJEXT) \
+am_xsight_OBJECTS = xsight.$(OBJEXT) hash.$(OBJEXT) \
+	json_influx.$(OBJEXT) options.$(OBJEXT) libinflux.$(OBJEXT) \
 	string-funcs.$(OBJEXT) debug.$(OBJEXT) parse.$(OBJEXT)
 xsight_OBJECTS = $(am_xsight_OBJECTS)
 xsight_LDADD = $(LDADD)
@@ -262,11 +263,10 @@ top_builddir = .
 top_srcdir = .
 USE_LIBJSON = -ljson-c
 USE_LIBJSON = -ljson
-AM_CFLAGS = -g -O3 -Wall -std=gnu99 -fgnu89-inline
-AM_LDFLAGS = -lestats  -lcurl -luuid -lconfig $(USE_LIBJSON)
-xsight_SOURCES = xsight.c libinflux.c string-funcs.c debug.c parse.c \
-                 scripts.h xisght.h string-funcs.h \
-		 debug.h uthash.h version.h
+AM_CFLAGS = -O3 -Wall -Wextra -std=gnu99 -fgnu89-inline
+AM_LDFLAGS = -lestats -lcurl -luuid -lconfig $(USE_LIBJSON)
+xsight_SOURCES = xsight.c hash.c json_influx.c options.c libinflux.c \
+		 string-funcs.c debug.c parse.c
 
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -376,7 +376,10 @@ distclean-compile:
 	-rm -f *.tab.c
 
 include ./$(DEPDIR)/debug.Po
+include ./$(DEPDIR)/hash.Po
+include ./$(DEPDIR)/json_influx.Po
 include ./$(DEPDIR)/libinflux.Po
+include ./$(DEPDIR)/options.Po
 include ./$(DEPDIR)/parse.Po
 include ./$(DEPDIR)/string-funcs.Po
 include ./$(DEPDIR)/xsight.Po

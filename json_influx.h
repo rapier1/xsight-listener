@@ -15,24 +15,21 @@
  *
  */
 
-#ifndef MAIN_H
-#define MAIN_H
+#ifndef JSON_INFLUX_H
+#define JSON_INFLUX_H
 #define GNU_SOURCE 1
-#include <sys/stat.h>
-#include "scripts.h"
-#include "curl/curl.h"
-#include "debug.h"
-#include "hash.h"
-#include "json_influx.h"
-#include "parse.h"
-#include "version.h"
-
-typedef struct CmdLineCID {
-	int cid;
-	char cmdline[256];
-	UT_hash_handle hh;
-} CmdLineCID;
-
+#ifdef HAVE_LIBJSONC
+#include <json-c/json.h>
+#else
+#include <json/json.h>
 #endif
+#include "hash.h"
+#include "libinflux.h"
+#include "options.h"
 
-
+void add_flow_influx(uuid_t, struct estats_connection_info *);
+void add_time(uuid_t, char *);
+void read_metrics (struct ConnectionHash *, struct estats_nl_client *);
+void replace_array_in_json_object (json_object *, char *, char *, char *, char **);
+	
+#endif
