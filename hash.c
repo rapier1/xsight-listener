@@ -76,36 +76,33 @@ struct ConnectionHash *add_connection (struct estats_connection_info *conn) {
 }
 
 
-	/* we need to determine which sets of tags to use */
-	/* this is based on the network stanzas in the config file */
-	/* iterate theough the networks hash. get the net_addrs field (an arry */
-	/* Step through that array and see if the */
-	/* incoming ip address (remote) matches (we can use filter_ips for this */
-	/* if true then create the tags based on the rest of the information in the */
-	/* networkshash struct */
-	/* at this point we don't want to allow a flow to exist on multiple networks */
-	/* it would be easy to change this by moving the hash_iter to it's own function */
-	/* that then calls add_flow_influx */
+/* we need to determine which sets of tags to use */
+/* this is based on the network stanzas in the config file */
+/* iterate theough the networks hash. get the net_addrs field (an arry */
+/* Step through that array and see if the */
+/* incoming ip address (remote) matches (we can use filter_ips for this */
+/* if true then create the tags based on the rest of the information in the */
+/* networkshash struct */
 
-struct NetworksHash *hash_get_tags(struct estats_connection_tuple_ascii *asc) {
+int hash_get_tags(struct estats_connection_tuple_ascii *asc, struct ConnectionHash *flow) {
 	struct NetworksHash *current, *temp;
 	HASH_ITER (hh, networks, current, temp) {
 		/* if the count is - then the networks config option is
 		 * empty and this means that *everything* should match that
 		 * network */
-		if (current->net_addrs_count == 0)
-			return current;
+		printf ("%s count %d\n", current->group, current->net_addrs_count);
+		if ((current->net_addrs_count == 0) || (match_ips(asc->rem_addr, 
+								  current->net_addrs, 
+								  current->net_addrs_count))) {
 
-		if (match_ips(asc->rem_addr, current->net_addrs, current->net_addrs_count)) {
-			/* the ip address matched so break out of the loop and */
-			/* use the information in current*/
-			return current;
+			flow->group = strdup(current->group);
+			flow->domain_name = strdup(current->domain_name);
+			return 1;
 		}
-		/* if there is no match to any known network what should we do? */
-		/* right now, nothing */
-		return NULL;
 	}
-	return NULL;
+	/* if there is no match to any known network what should we do? */
+	/* right now, nothing */
+	return 0;
 }
 
 int delete_flow (int cid) {

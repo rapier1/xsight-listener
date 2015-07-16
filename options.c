@@ -206,9 +206,10 @@ int get_config(char *path, int tmp_debug) {
 
 		net_array = config_setting_get_member(net_child, "networks");
 		mycount = config_setting_length(net_array);
+		network->net_addrs_count = 0;
 		if (mycount) {
-			network->net_addrs = malloc(sizeof(network->net_addrs) * count);
-		        network->net_addrs_count = count;
+			network->net_addrs = malloc(sizeof(network->net_addrs) * mycount);
+		        network->net_addrs_count = mycount;
 		}
 		for (j = 0; j < mycount; j++) {
 			string = config_setting_get_string_elem(net_array, j);

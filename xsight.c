@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
 
 	if (hash_get_curl_handles() == -1) {
 		log_error("Unable to open all curl handles. Exiting");
-		goto Cleanup;
+		//goto Cleanup;
 	}
 
 	/* random seed init for uuid */
@@ -245,9 +245,9 @@ int main(int argc, char *argv[])
 				/* if it is not then add the connection to our hash */
 				temphash = add_connection(ci);
 				temphash->closed = 0;
-				add_flow_influx(temphash->flowid, ci);
+				add_flow_influx(temphash, ci);
 				read_metrics(temphash, cl);
-				add_time(temphash->flowid, cl, ci->cid, "StartTime");
+				add_time(temphash, cl, ci->cid, "StartTime");
 			}		
 		}
 		/* iterate over all of the flows we've collected*/
@@ -287,7 +287,7 @@ int main(int argc, char *argv[])
 					 * so just wait for it to expire
 					 */
 					read_metrics(temphash, cl);
-					add_time(temphash->flowid, NULL, 0, "EndTime");
+					add_time(temphash, NULL, 0, "EndTime");
 					temphash->closed = 1;
 				}
 			}

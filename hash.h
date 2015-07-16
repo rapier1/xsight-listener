@@ -31,6 +31,8 @@ typedef struct ConnectionHash {
 	int seen;
 	int closed; 
 	uuid_t flowid;
+	const char *group;
+	const char *domain_name;
 	UT_hash_handle hh;
 } ConnectionHash;
 
@@ -49,7 +51,7 @@ typedef struct NetworksHash {
 	UT_hash_handle hh;
 } NetworksHash;
 
-struct NetworksHash *hash_get_tags(struct estats_connection_tuple_ascii *);
+int hash_get_tags(struct estats_connection_tuple_ascii *, struct ConnectionHash *);
 void hash_sort_by_precedence ();
 int hash_get_curl_handles ();
 void add_network(NetworksHash *, int);
