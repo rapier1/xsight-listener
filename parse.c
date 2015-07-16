@@ -214,6 +214,103 @@ Cleanup:
 	return result;
 }
 
+/* same as the above but only for a single incoming ip address  */
+int match_ips (char *remote, char **ips, int index) {
+	int i, ret = 0;
+	int result = 0;
+	struct addrinfo hint;
+	struct addrinfo *remres = 0; 
+	struct addrinfo *testres = 0;
+	struct sockaddr_in *remaddr = NULL;
+	struct sockaddr_in *testaddr = NULL;
+	struct sockaddr_in6 *remaddr6 = NULL;
+	struct sockaddr_in6 *testaddr6 = NULL;
+	char *ip;
+	char *mask;
+	char *tmpip;
+	int bits = 32; // the default mask if they don't include a mask
+
+	memset(&hint, '\0', sizeof hint);
+	
+	hint.ai_family = AF_UNSPEC;
+
+	/* get the info for the remote ip address.*/
+	ret = getaddrinfo(remote, NULL, &hint, &remres);
+	if (ret != 0){
+		// we shouldn't see a bad address here but we should check anyway
+		fprintf(stderr, "getaddrinfo: %s (likely an invalid remote ip address)\n", 
+			gai_strerror(ret));
+		free(remres);
+		return 0;
+	}
+
+	// cast the address information to the appropriate struct
+	if (remres->ai_family == AF_INET)  
+		remaddr = (struct sockaddr_in*)remres->ai_addr;
+	else 
+		remaddr6 = (struct sockaddr_in6*)remres->ai_addr;
+
+	for (i = 0; i < index; i++) {
+
+		/* use strndupa because strdup and free was causing odd errors in valgrind
+		 * i think this is because of what was happening with the strtok
+		 */
+		tmpip = strndupa(ips[i], strlen(ips[i]));
+
+		// we need to examine the incoming address to see if it has a slash
+		// indicating that it is being masked. 
+		ip = strtok(tmpip, "/");
+		mask = strtok(NULL, "\0");
+
+		// convert whatever we have into an int
+		// this is *only* for ipv4.
+		if (mask != NULL) {
+			bits = atoi(mask);
+		}
+		
+		// if the int is outside of the range then set it to the narrowest possible
+		// as you can see we aren't supporting a /0 mask. TODO: fix it so we can. 
+		if (bits == 0 || bits > 32) {
+			bits = 32;
+		}
+
+		// go through the above for each ip address we are testing against
+		ret = getaddrinfo(ip, NULL, &hint, &testres);
+		if (ret != 0) {
+			fprintf(stderr, "getaddrinfo: %s (likely an invalid user defined ip address)\n", 
+				gai_strerror(ret));
+			continue;
+		}
+
+		if (testres->ai_family == AF_INET)  
+			testaddr = (struct sockaddr_in*)testres->ai_addr;
+		else 
+			testaddr6 = (struct sockaddr_in6*)testres->ai_addr;
+
+		if (remres->ai_family == testres->ai_family) {
+			if (remres->ai_family == AF_INET) {
+				if (cidr_match(remaddr->sin_addr.s_addr, testaddr->sin_addr.s_addr, bits)) {
+					result = 1;
+					freeaddrinfo(testres);
+					goto Cleanup;
+				}
+			} else {
+				if (memcmp(remaddr6->sin6_addr.s6_addr, testaddr6->sin6_addr.s6_addr, 
+					   sizeof(testaddr6->sin6_addr.s6_addr)) == 0) {
+					result = 1;
+					freeaddrinfo(testres);
+					goto Cleanup;
+				}
+			}
+		}
+		freeaddrinfo(testres);
+	}
+Cleanup:
+	freeaddrinfo(remres);
+	return result;
+}
+
+
 // if the application name is found in the list of excluded apps
 // then return 1 indicating that we should not report this app
 int exclude_app (char* appname, char** apps, int index) {

@@ -18,10 +18,12 @@
 #ifndef HASH_H
 #define HASH_H
 #include <uuid/uuid.h>
+#include <curl/curl.h>
 #include "uthash.h"
 #include "debug.h"
 #include "scripts.h"
-#include <curl/curl.h>
+#include "libinflux.h"
+#include "parse.h"
 
 typedef struct ConnectionHash {
 	int cid;
@@ -33,8 +35,9 @@ typedef struct ConnectionHash {
 } ConnectionHash;
 
 typedef struct NetworksHash {
-	int network_id;
-	int net_addrs_count;
+	int network_id; /*key*/
+	int net_addrs_count; /* number of networks in net_addrs */
+	int precedence; /* we want to sort the hash so 'interior' is always first */
 	const char *group;
 	const char *domain_name;
 	const char *influx_host_url;
@@ -46,7 +49,8 @@ typedef struct NetworksHash {
 	UT_hash_handle hh;
 } NetworksHash;
 
-
+struct NetworksHash *hash_get_tags(struct estats_connection_tuple_ascii *);
+void hash_sort_by_precedence ();
 int hash_get_curl_handles ();
 void add_network(NetworksHash *, int);
 struct ConnectionHash *find_cid (int);

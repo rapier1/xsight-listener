@@ -26,5 +26,6 @@ int exclude_port (int, int, int [], int);
 int exclude_app (char*, char**, int);
 int include_app (char*, char**, int);
 int filter_ips( char*, char*, char**, int);
+int match_ips( char*, char**, int);
 
 #endif

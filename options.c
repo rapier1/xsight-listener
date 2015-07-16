@@ -22,7 +22,7 @@ extern struct Networks *networks;
 /* read the configuration file */
 int get_config(char *path, int tmp_debug) {
 	char search_str[64];
-	int value, count, i;
+	int value, count, i, order;
 	const char *string;
 	const char *network_name;
 	const config_setting_t *array;
@@ -53,54 +53,12 @@ int get_config(char *path, int tmp_debug) {
 		log_debug("Debug flag: %d", debugflag);
 	}
 
-	/* if (!config_lookup_string(&cfg, "group", &string)) { */
-	/* 	log_error("Monitored group name not specified in config file! Exiting."); */
-	/* 	return -1; */
-	/* } */
-	/* options.group = strdup(string); */
-	/* log_debug("Group: %s", options.domain_name); */
-
-	/* if (!config_lookup_string(&cfg, "domain", &string)) { */
-	/* 	log_error("Domain not specified in config file! Exiting."); */
-	/* 	return -1; */
-	/* } */
-	/* options.domain_name = strdup(string); */
-	/* log_debug("Domain: %s", options.domain_name); */
-
 	if (!config_lookup_string(&cfg, "dtn_id", &string)) {
 		log_error("DTN ID not specified in config file! Exiting.");
 		return -1;
 	}
 	options.dtn_id = strdup(string);
 	log_debug("DTN: %s", options.dtn_id);
-
-	/* if (!config_lookup_string(&cfg, "database", &string)) { */
-	/* 	log_error("Influx database not specified in config file! Exiting."); */
-	/* 	return -1; */
-	/* } */
-	/* options.influx_database = strdup(string); */
-	/* log_debug("Influx Database: %s", options.influx_database); */
-
-	/* if (!config_lookup_string(&cfg, "password", &string)) { */
-	/* 	log_error("Influx database password not specified in config file! Exiting."); */
-	/* 	return -1; */
-	/* } */
-	/* options.influx_password = strdup(string); */
-	/* log_debug("Influx Password: %s", options.influx_password); */
-
-	/* if (!config_lookup_string(&cfg, "db_user", &string)) { */
-	/* 	log_error("Influx database user not specified in config file! Exiting."); */
-	/* 	return -1; */
-	/* } */
-	/* options.influx_user = strdup(string); */
-	/* log_debug("Influx User: %s", options.influx_user); */
-
-	/* if (!config_lookup_string(&cfg, "host_url", &string)) { */
-	/* 	log_error("Influx host URL not specified in config file! Exiting."); */
-	/* 	return -1; */
-	/* } */
-	/* options.influx_host_url = strdup(string); */
-	/* log_debug("Influx Host URL: %s", options.influx_host_url); */
 
 	if (!config_lookup_int(&cfg, "conn_poll_interval", &value)) {
 		log_error("Connection polling interval not specified in config file! Exiting.");
@@ -236,7 +194,15 @@ int get_config(char *path, int tmp_debug) {
 			log_error("Monitored network %s's database password not specified in config file! Exiting.", network_name);
 			//return -1;
 		}
+		log_debug("Network: %s, password: %s", network_name, string);
 		network->influx_password = strdup(string);
+
+		if (!config_setting_lookup_int(net_child, "order", &order)) {
+			network->precedence = i;
+			//return -1;
+		}
+		log_debug("Network: %s, precedence: %d", network_name, order);
+		network->precedence = order;
 
 		net_array = config_setting_get_member(net_child, "networks");
 		mycount = config_setting_length(net_array);
@@ -250,11 +216,14 @@ int get_config(char *path, int tmp_debug) {
 			log_debug("%s: Added network : %s", network_name, network->net_addrs[j]);
 		}
 		add_network(network, i);
-//		HASH_ADD_INT(networks, network_id, network);
 	}
+	/* we need to sort the network hash in precedence order */
+	hash_sort_by_precedence();
 	config_destroy(&cfg);
 	return 1;
 }
+
+
 
 void freeoptions () {
 	int i;

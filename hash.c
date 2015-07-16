@@ -15,10 +15,12 @@
  */
 
 #include "hash.h"
-#include "libinflux.h"
+
 
 extern struct ConnectionHash *activeflows;
 extern struct NetworksHash *networks;
+
+int _by_precedence(NetworksHash *, NetworksHash *); /*forward declaration*/
 
 void add_network(struct NetworksHash *n, int network_id) {
 	n->network_id = network_id; /* pointless assignment to supress unused variable warning - remove ths later */
@@ -73,6 +75,39 @@ struct ConnectionHash *add_connection (struct estats_connection_info *conn) {
 	return flow;
 }
 
+
+	/* we need to determine which sets of tags to use */
+	/* this is based on the network stanzas in the config file */
+	/* iterate theough the networks hash. get the net_addrs field (an arry */
+	/* Step through that array and see if the */
+	/* incoming ip address (remote) matches (we can use filter_ips for this */
+	/* if true then create the tags based on the rest of the information in the */
+	/* networkshash struct */
+	/* at this point we don't want to allow a flow to exist on multiple networks */
+	/* it would be easy to change this by moving the hash_iter to it's own function */
+	/* that then calls add_flow_influx */
+
+struct NetworksHash *hash_get_tags(struct estats_connection_tuple_ascii *asc) {
+	struct NetworksHash *current, *temp;
+	HASH_ITER (hh, networks, current, temp) {
+		/* if the count is - then the networks config option is
+		 * empty and this means that *everything* should match that
+		 * network */
+		if (current->net_addrs_count == 0)
+			return current;
+
+		if (match_ips(asc->rem_addr, current->net_addrs, current->net_addrs_count)) {
+			/* the ip address matched so break out of the loop and */
+			/* use the information in current*/
+			return current;
+		}
+		/* if there is no match to any known network what should we do? */
+		/* right now, nothing */
+		return NULL;
+	}
+	return NULL;
+}
+
 int delete_flow (int cid) {
 	struct ConnectionHash *current;
 	HASH_FIND_INT(activeflows, &cid, current);
@@ -92,6 +127,14 @@ void clear_hash () {
 		free(current);
 	}
 }
+
+void hash_sort_by_precedence () {
+	HASH_SORT(networks, _by_precedence);
+}
+
+int _by_precedence (NetworksHash *a, NetworksHash *b) {
+	return (a->precedence - b->precedence);
+};
 
 /* used for debugging purposes mostly but may be useful in the future*/
 int count_hash () {

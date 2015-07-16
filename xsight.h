@@ -23,7 +23,7 @@
 #include "curl/curl.h"
 #include "debug.h"
 #include "hash.h"
-#include "json_influx.h"
+#include "build_query.h"
 #include "parse.h"
 #include "version.h"
 

@@ -129,6 +129,8 @@ int main(int argc, char *argv[])
 	int i, j, opt, tmp_debug;
 	pid_t pid, sid;
 
+	config_filepath = "/home/rapier/xsight/newcode/xsight.cfg";
+
 	tmp_debug = -1;
 	daemonize = 0;
 
@@ -180,7 +182,6 @@ int main(int argc, char *argv[])
 		close(STDERR_FILENO);		
 	}	
 
-	config_filepath = "/home/rapier/xsight/newcode/xsight.cfg";
 
 	if (get_config(config_filepath, tmp_debug) == -1) {
 		return -1;
