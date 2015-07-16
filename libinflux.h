@@ -3,6 +3,7 @@
 #include <curl/curl.h>
 #ifndef libinflux__h
 #define libinflux__h
+#include <curl/curl.h>
 
 extern CURL *curl;
 extern void rest_init(char *, char *);

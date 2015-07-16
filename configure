@@ -629,10 +629,6 @@ LIBOBJS
 EGREP
 GREP
 CPP
-LINK_LIBJSON_FALSE
-LINK_LIBJSON_TRUE
-LINK_LIBJSONC_FALSE
-LINK_LIBJSONC_TRUE
 am__fastdepCC_FALSE
 am__fastdepCC_TRUE
 CCDEPMODE
@@ -4048,168 +4044,6 @@ else
         exit -1
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing json_tokener_parse_ex" >&5
-$as_echo_n "checking for library containing json_tokener_parse_ex... " >&6; }
-if ${ac_cv_search_json_tokener_parse_ex+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char json_tokener_parse_ex ();
-int
-main ()
-{
-return json_tokener_parse_ex ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' json-c json; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_json_tokener_parse_ex=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_json_tokener_parse_ex+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_json_tokener_parse_ex+:} false; then :
-
-else
-  ac_cv_search_json_tokener_parse_ex=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_json_tokener_parse_ex" >&5
-$as_echo "$ac_cv_search_json_tokener_parse_ex" >&6; }
-ac_res=$ac_cv_search_json_tokener_parse_ex
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
-else
-
-	echo "JSON-C (fedora) and/or LibJson (debian) library ) is missing."
-	exit -1
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for json_tokener_parse_ex in -ljson-c" >&5
-$as_echo_n "checking for json_tokener_parse_ex in -ljson-c... " >&6; }
-if ${ac_cv_lib_json_c_json_tokener_parse_ex+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-ljson-c  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char json_tokener_parse_ex ();
-int
-main ()
-{
-return json_tokener_parse_ex ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_json_c_json_tokener_parse_ex=yes
-else
-  ac_cv_lib_json_c_json_tokener_parse_ex=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_json_c_json_tokener_parse_ex" >&5
-$as_echo "$ac_cv_lib_json_c_json_tokener_parse_ex" >&6; }
-if test "x$ac_cv_lib_json_c_json_tokener_parse_ex" = xyes; then :
-  LIBJSONC=true
-fi
-
- if test x$LIBJSONC = xtrue; then
-  LINK_LIBJSONC_TRUE=
-  LINK_LIBJSONC_FALSE='#'
-else
-  LINK_LIBJSONC_TRUE='#'
-  LINK_LIBJSONC_FALSE=
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for json_tokener_parse_ex in -ljson" >&5
-$as_echo_n "checking for json_tokener_parse_ex in -ljson... " >&6; }
-if ${ac_cv_lib_json_json_tokener_parse_ex+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-ljson  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char json_tokener_parse_ex ();
-int
-main ()
-{
-return json_tokener_parse_ex ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_json_json_tokener_parse_ex=yes
-else
-  ac_cv_lib_json_json_tokener_parse_ex=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_json_json_tokener_parse_ex" >&5
-$as_echo "$ac_cv_lib_json_json_tokener_parse_ex" >&6; }
-if test "x$ac_cv_lib_json_json_tokener_parse_ex" = xyes; then :
-  LIBJSON=true
-fi
-
- if test x$LIBJSON = xtrue; then
-  LINK_LIBJSON_TRUE=
-  LINK_LIBJSON_FALSE='#'
-else
-  LINK_LIBJSON_TRUE='#'
-  LINK_LIBJSON_FALSE=
-fi
-
-
-if test "$LIBJSONC" = "true"; then
-
-$as_echo "#define HAVE_LIBJSONC 1" >>confdefs.h
-
-fi
 
 # Checks for header files.
 ac_ext=c
@@ -4957,14 +4791,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__fastdepCC_TRUE}" && test -z "${am__fastdepCC_FALSE}"; then
   as_fn_error $? "conditional \"am__fastdepCC\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${LINK_LIBJSONC_TRUE}" && test -z "${LINK_LIBJSONC_FALSE}"; then
-  as_fn_error $? "conditional \"LINK_LIBJSONC\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${LINK_LIBJSON_TRUE}" && test -z "${LINK_LIBJSON_FALSE}"; then
-  as_fn_error $? "conditional \"LINK_LIBJSON\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 

@@ -96,7 +96,7 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_xsight_OBJECTS = xsight.$(OBJEXT) hash.$(OBJEXT) \
-	json_influx.$(OBJEXT) options.$(OBJEXT) libinflux.$(OBJEXT) \
+	build_query.$(OBJEXT) options.$(OBJEXT) libinflux.$(OBJEXT) \
 	string-funcs.$(OBJEXT) debug.$(OBJEXT) parse.$(OBJEXT)
 xsight_OBJECTS = $(am_xsight_OBJECTS)
 xsight_LDADD = $(LDADD)
@@ -261,11 +261,9 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-@LINK_LIBJSONC_TRUE@USE_LIBJSON = -ljson-c
-@LINK_LIBJSON_TRUE@USE_LIBJSON = -ljson
 AM_CFLAGS = -O3 -Wall -Wextra -std=gnu99 -fgnu89-inline
-AM_LDFLAGS = -lestats -lcurl -luuid -lconfig $(USE_LIBJSON)
-xsight_SOURCES = xsight.c hash.c json_influx.c options.c libinflux.c \
+AM_LDFLAGS = -lestats -lcurl -luuid -lconfig
+xsight_SOURCES = xsight.c hash.c build_query.c options.c libinflux.c \
 		 string-funcs.c debug.c parse.c
 
 all: config.h
@@ -375,9 +373,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/build_query.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/debug.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hash.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/json_influx.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libinflux.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse.Po@am__quote@

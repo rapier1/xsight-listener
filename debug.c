@@ -22,7 +22,6 @@
 #include "debug.h"
 
 extern int debugflag;
-extern int printjson;
 extern int daemonize;
  
 void log_format(const char* tag, const char* message, LogLevels level, va_list args) {   
@@ -63,8 +62,6 @@ void log_error(const char* message, ...) {
 }
 
 void log_info(const char* message, ...) {   
-	if (!printjson)
-		return;
 	va_list args;   
 	LogLevels level;
 	level = INFO;

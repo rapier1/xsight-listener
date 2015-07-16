@@ -21,15 +21,34 @@
 #include "uthash.h"
 #include "debug.h"
 #include "scripts.h"
+#include <curl/curl.h>
 
 typedef struct ConnectionHash {
 	int cid;
-	int lastpoll;
+	uint64_t lastpoll;
 	int seen;
+	int closed; 
 	uuid_t flowid;
 	UT_hash_handle hh;
 } ConnectionHash;
 
+typedef struct NetworksHash {
+	int network_id;
+	int net_addrs_count;
+	const char *group;
+	const char *domain_name;
+	const char *influx_host_url;
+	const char *influx_database;
+	const char *influx_password;
+	const char *influx_user;
+	char **net_addrs;
+	CURL *curl;
+	UT_hash_handle hh;
+} NetworksHash;
+
+
+int hash_get_curl_handles ();
+void add_network(NetworksHash *, int);
 struct ConnectionHash *find_cid (int);
 struct ConnectionHash *add_connection (struct estats_connection_info *);
 int delete_flow (int);

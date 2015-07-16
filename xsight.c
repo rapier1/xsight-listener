@@ -16,11 +16,13 @@
 #include "xsight.h"
 
 int debugflag = 0;
-int printjson = 0;
 int daemonize = 0;
 
 /* global options struct*/
 struct Options options;
+
+/* global struct for network information */
+struct NetworksHash *networks = NULL;
 
 /* global struct for active connections/flows */
 struct ConnectionHash *activeflows = NULL;
@@ -123,9 +125,8 @@ int main(int argc, char *argv[])
 	struct estats_mask state_mask;
 	struct ConnectionHash* temphash = NULL;
 	struct ConnectionHash* vtemphash = NULL;
-	char *influx_service_url = NULL;
 	char *config_filepath;
-	int length, i, j, opt, tmp_debug;
+	int i, j, opt, tmp_debug;
 	pid_t pid, sid;
 
 	tmp_debug = -1;
@@ -184,22 +185,17 @@ int main(int argc, char *argv[])
 	if (get_config(config_filepath, tmp_debug) == -1) {
 		return -1;
 	}
-	/* generate the service url from the options */
-	length = snprintf (NULL, 0, "db/%s/series?u=client&p=%s", options.influx_database, options.influx_password);
-	length++;
-	influx_service_url = malloc(length * sizeof(char));
-	snprintf(influx_service_url, length, "db/%s/series?u=client&p=%s", options.influx_database, options.influx_password);
-	log_debug ("Service URL: %s", influx_service_url);
-	
-	/* initiate the rest connection*/
-	rest_init((char *)options.influx_host_url, influx_service_url);
-	if (curl == NULL) {
-		log_error("Could not initiate the curl connection to %s%s", options.influx_host_url, influx_service_url);
-		return -1;
-	}
 
-	/* we don't need this anymore*/
-	free(influx_service_url);
+	/* iterate over the various networks and generate a curl handle for each of them */
+	/* store a pointer to the curl handle in the entry in the hash */
+	/* when a new connection is matched to a specific monitored network */
+	/* store the curl handle in the active flow struct */
+	/* then, when connecting use that curl handle */
+
+	if (hash_get_curl_handles() == -1) {
+		log_error("Unable to open all curl handles. Exiting");
+		goto Cleanup;
+	}
 
 	/* random seed init for uuid */
 	srand(time(NULL));
@@ -207,7 +203,7 @@ int main(int argc, char *argv[])
 	/* set up estats mask to get state information */
 	state_mask.masks[0] = 0;        /*perf*/
         state_mask.masks[1] = 0;        /*path*/
-        state_mask.masks[2] = 1UL << 5; /*stack*/
+        state_mask.masks[2] = 1UL << 9; /*stack*/
         state_mask.masks[3] = 0;        /*app*/ 
         state_mask.masks[4] = 0;        /*tune*/ 
         state_mask.masks[5] = 0;        /*extras*/ 
@@ -247,57 +243,55 @@ int main(int argc, char *argv[])
 				}
 				/* if it is not then add the connection to our hash */
 				temphash = add_connection(ci);
+				temphash->closed = 0;
 				add_flow_influx(temphash->flowid, ci);
 				read_metrics(temphash, cl);
-				add_time(temphash->flowid, "StartTime");
+				add_time(temphash->flowid, cl, ci->cid, "StartTime");
 			}		
 		}
-		/* iterate over the hash. If the seen flag is 0 then the connection closed so we should remove it */
-		/* this should work in the next hash iteration but 
-		 * for some reason it doesn't iterate over hashes where seen=0
-		 * weird.
-		 *TODO: figure this out!
-		 */
+		/* iterate over all of the flows we've collected*/
 		HASH_ITER(hh, activeflows, temphash, vtemphash) {
+			/* delete stale flows from the hash */
 			if (temphash->seen == 0) {
+				log_debug("Deleting flow: %d", temphash->cid);
 				if (delete_flow(temphash->cid) != 1) {
 					log_error("Error deleting flow %d from table.", temphash->cid);
 				}
+				continue;
 			}
-		}
 
-		/* note to self we are collecting the state information so we should use the change from 1 to 0 to indicate
-		 * when we need to pull the last set of metrics. We could use the state information to determine when to eliminate
-		 * the connection from the list but I'm afraid that we'll miss that at some point. 
-		 */
-		HASH_ITER(hh, activeflows, temphash, vtemphash) {
 			/* the flow has not expired so get the state information */
 			Chk(estats_nl_client_set_mask(cl, &state_mask));
 			Chk2Ign(estats_read_vars(esdata, temphash->cid, cl));
 
 			/* the connection has not closed so check to see if the timer expired */
-			if (time(NULL) - temphash->lastpoll >= options.metric_interval) {
+			/* but only if the flow is not closed (as per the state) */
+			if ((time(NULL) - temphash->lastpoll >= options.metric_interval) 
+			    && (temphash->closed != 1)) {
 				// get data
-				read_metrics(temphash, cl);
 				temphash->lastpoll = time(NULL);
+				read_metrics(temphash, cl);
 			}
+
 			/* everything is masked except for state */
 			for (i = 0; i < esdata->length; i++) {
 				if (esdata->val[i].masked)
 					continue;
-				if (esdata->val[i].sv32 == 1) {
-					/*connection has closed (state:1 means closed) - get final stats*/
+				if ((esdata->val[i].sv32 == 1) && (temphash->closed != 1)) {
+					/*connection has closed (state:1 means closed) - 
+					 * get final stats*/
 					/* don't delete the hash here. 
 					 * it will still show up in the connection scan and
 					 * be readded to the hash
 					 * so just wait for it to expire
 					 */
 					read_metrics(temphash, cl);
-					add_time(temphash->flowid, "EndTime");
+					add_time(temphash->flowid, NULL, 0, "EndTime");
+					temphash->closed = 1;
 				}
 			}
 		}
-	Continue: ;
+	Continue:
 		estats_val_data_free(&esdata);
 		estats_connection_list_free(&clist);
 		log_debug("Hash count: %d", count_hash());

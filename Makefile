@@ -96,7 +96,7 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_xsight_OBJECTS = xsight.$(OBJEXT) hash.$(OBJEXT) \
-	json_influx.$(OBJEXT) options.$(OBJEXT) libinflux.$(OBJEXT) \
+	build_query.$(OBJEXT) options.$(OBJEXT) libinflux.$(OBJEXT) \
 	string-funcs.$(OBJEXT) debug.$(OBJEXT) parse.$(OBJEXT)
 xsight_OBJECTS = $(am_xsight_OBJECTS)
 xsight_LDADD = $(LDADD)
@@ -202,7 +202,7 @@ INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 LDFLAGS = 
 LIBOBJS = 
-LIBS = -ljson-c -luuid -lconfig -lcurl -lestats 
+LIBS = -luuid -lconfig -lcurl -lestats 
 LTLIBOBJS = 
 MAKEINFO = ${SHELL} /home/rapier/xsight/missing makeinfo
 MKDIR_P = /usr/bin/mkdir -p
@@ -261,11 +261,9 @@ target_alias =
 top_build_prefix = 
 top_builddir = .
 top_srcdir = .
-USE_LIBJSON = -ljson-c
-USE_LIBJSON = -ljson
 AM_CFLAGS = -O3 -Wall -Wextra -std=gnu99 -fgnu89-inline
-AM_LDFLAGS = -lestats -lcurl -luuid -lconfig $(USE_LIBJSON)
-xsight_SOURCES = xsight.c hash.c json_influx.c options.c libinflux.c \
+AM_LDFLAGS = -lestats -lcurl -luuid -lconfig
+xsight_SOURCES = xsight.c hash.c build_query.c options.c libinflux.c \
 		 string-funcs.c debug.c parse.c
 
 all: config.h
@@ -375,9 +373,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+include ./$(DEPDIR)/build_query.Po
 include ./$(DEPDIR)/debug.Po
 include ./$(DEPDIR)/hash.Po
-include ./$(DEPDIR)/json_influx.Po
 include ./$(DEPDIR)/libinflux.Po
 include ./$(DEPDIR)/options.Po
 include ./$(DEPDIR)/parse.Po

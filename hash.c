@@ -15,9 +15,44 @@
  */
 
 #include "hash.h"
-//#include "xsight.h"
+#include "libinflux.h"
 
 extern struct ConnectionHash *activeflows;
+extern struct NetworksHash *networks;
+
+void add_network(struct NetworksHash *n, int network_id) {
+	n->network_id = network_id; /* pointless assignment to supress unused variable warning - remove ths later */
+	HASH_ADD_INT(networks, network_id, n);
+}
+
+int  hash_get_curl_handles () {
+	struct NetworksHash *current, *temp;
+	char *influx_service_url;
+	int length;
+	CURL *mycurl = NULL;
+	HASH_ITER(hh, networks, current, temp) {
+		/* generate the service url from the options */
+		length = snprintf (NULL, 0, "write?db=%s&u=%s&p=%s", 
+				   current->influx_database, current->influx_user, current->influx_password);
+		length++;
+		influx_service_url = malloc(length * sizeof(char));
+		snprintf(influx_service_url, length, "write?db=%s&u=%s&p=%s", 
+			 current->influx_database, current->influx_user, current->influx_password);
+		log_debug ("Service URL: %s", influx_service_url);
+		
+		/* initiate the rest connection*/
+		rest_init((char *)current->influx_host_url, influx_service_url);
+		if (mycurl == NULL) {
+			log_error("Could not initiate the curl connection to %s%s", 
+				  current->influx_host_url, influx_service_url);
+			return -1;
+		}
+		current->curl = mycurl;
+		/* we don't need this anymore*/
+		free(influx_service_url);
+	}
+	return 1;
+}
 
 /* find a specific connection ID in the hash */
 struct ConnectionHash *find_cid(int cid) {

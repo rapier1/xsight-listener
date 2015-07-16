@@ -28,7 +28,7 @@
 #include "options.h"
 
 void add_flow_influx(uuid_t, struct estats_connection_info *);
-void add_time(uuid_t, char *);
+void add_time(uuid_t, struct estats_nl_client *, int, char *);
 void read_metrics (struct ConnectionHash *, struct estats_nl_client *);
 void replace_array_in_json_object (json_object *, char *, char *, char *, char **);
 	

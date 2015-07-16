@@ -22,24 +22,26 @@
 #include <stdlib.h>
 #include "libconfig.h"
 #include "debug.h"
+#include "uthash.h"
+#include "hash.h"
 
 extern int debugflag;
-extern int printjson;
 
 typedef struct Options {
-	int metric_interval;
+	unsigned int metric_interval;
 	int conn_interval;
-	int debugflag;
-	int printjson;
         int in_ips_count;
         int ex_ips_count;
         int in_apps_count;
         int ex_apps_count;
+	int network_count;
+	const char *group;
 	const char *domain_name;
 	const char *dtn_id;
 	const char *influx_host_url;
-        const char *influx_database;
-        const char *influx_password;
+	const char *influx_database;
+	const char *influx_password;
+	const char *influx_user;
         char **include_ips;
         char **exclude_ips;
         char **include_apps;
@@ -48,5 +50,6 @@ typedef struct Options {
 
 void freeoptions ();
 int get_config(char *, int);
+int get_network_config (char *);
 
 #endif
