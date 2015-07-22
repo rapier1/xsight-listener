@@ -27,31 +27,42 @@ void add_network(struct NetworksHash *n, int network_id) {
 	HASH_ADD_INT(networks, network_id, n);
 }
 
-int  hash_get_curl_handles () {
+/* find the curl handle associated with the group name 
+ * return a pointer to the influxConn struct. 
+ * I should have been able to do with with hand_find_str but
+ * it failed to match any of the strings. 
+ * This works and is likley no more expensive
+ */
+influxConn *hash_find_curl_handle(const char *group) {
 	struct NetworksHash *current, *temp;
-	char *influx_service_url;
-	int length;
-	CURL *mycurl = NULL;
 	HASH_ITER(hh, networks, current, temp) {
-		/* generate the service url from the options */
-		length = snprintf (NULL, 0, "write?db=%s&u=%s&p=%s", 
-				   current->influx_database, current->influx_user, current->influx_password);
-		length++;
-		influx_service_url = malloc(length * sizeof(char));
-		snprintf(influx_service_url, length, "write?db=%s&u=%s&p=%s", 
-			 current->influx_database, current->influx_user, current->influx_password);
-		log_debug ("Service URL: %s", influx_service_url);
-		
-		/* initiate the rest connection*/
-		rest_init((char *)current->influx_host_url, influx_service_url);
+		if (strcmp(current->group, group) == 0) {
+		        break;
+		}
+	}
+	return current->conn;
+}
+
+/* create influxConn curl handles based on the information in the config
+ * file network stanzas. This handle is stored in the NetworkHash struct.
+ */
+int hash_get_curl_handles () {
+	struct NetworksHash *current, *temp;
+	influxConn *mycurl = NULL;
+	
+	HASH_ITER(hh, networks, current, temp) {
+		/* create the connection */
+
+		mycurl = create_conn ((char *)current->influx_host_url, (char *)current->influx_database, 
+				      (char *)current->influx_user, (char *)current->influx_password);
+		log_debug ("Created connection for %s to %s: %p", current->group, current->influx_host_url, mycurl);
+
+		current->conn = mycurl; /*current->conn needs *some* value before leaving this function*/
 		if (mycurl == NULL) {
-			log_error("Could not initiate the curl connection to %s%s", 
-				  current->influx_host_url, influx_service_url);
+                        log_error("Could not initiate the curl connection to %s", 
+                                  current->influx_host_url);
 			return -1;
 		}
-		current->curl = mycurl;
-		/* we don't need this anymore*/
-		free(influx_service_url);
 	}
 	return 1;
 }
@@ -90,7 +101,6 @@ int hash_get_tags(struct estats_connection_tuple_ascii *asc, struct ConnectionHa
 		/* if the count is - then the networks config option is
 		 * empty and this means that *everything* should match that
 		 * network */
-		printf ("%s count %d\n", current->group, current->net_addrs_count);
 		if ((current->net_addrs_count == 0) || (match_ips(asc->rem_addr, 
 								  current->net_addrs, 
 								  current->net_addrs_count))) {

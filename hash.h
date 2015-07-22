@@ -18,7 +18,6 @@
 #ifndef HASH_H
 #define HASH_H
 #include <uuid/uuid.h>
-#include <curl/curl.h>
 #include "uthash.h"
 #include "debug.h"
 #include "scripts.h"
@@ -33,6 +32,7 @@ typedef struct ConnectionHash {
 	uuid_t flowid;
 	const char *group;
 	const char *domain_name;
+	influxConn *conn;
 	UT_hash_handle hh;
 } ConnectionHash;
 
@@ -47,10 +47,11 @@ typedef struct NetworksHash {
 	const char *influx_password;
 	const char *influx_user;
 	char **net_addrs;
-	CURL *curl;
+	influxConn *conn;
 	UT_hash_handle hh;
 } NetworksHash;
 
+influxConn *hash_find_curl_handle(const char *);
 int hash_get_tags(struct estats_connection_tuple_ascii *, struct ConnectionHash *);
 void hash_sort_by_precedence ();
 int hash_get_curl_handles ();

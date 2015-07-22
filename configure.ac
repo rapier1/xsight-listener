@@ -13,6 +13,9 @@ LDFLAGS="$LDFLAGS"
 AC_PROG_CC
 
 # Checks for libraries.
+AC_SEARCH_LIBS([pthread_create], [pthread], [], [
+	echo "libpthreads is missing."
+	exit -1])
 AC_SEARCH_LIBS([estats_read_vars], [estats], [], [
 	echo "libestats (from Web10g) is missing."
         exit -1])
@@ -28,7 +31,7 @@ AC_SEARCH_LIBS([uuid_generate], [uuid], [], [
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h inttypes.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/param.h sys/socket.h unistd.h])
-AC_CHECK_HEADERS([uuid/uuid.h estats/estats.h curl/curl.h libconfig.h netdb.h])
+AC_CHECK_HEADERS([uuid/uuid.h estats/estats.h curl/curl.h libconfig.h netdb.h pthreads.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T

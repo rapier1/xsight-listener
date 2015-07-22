@@ -97,7 +97,8 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_xsight_OBJECTS = xsight.$(OBJEXT) hash.$(OBJEXT) \
 	build_query.$(OBJEXT) options.$(OBJEXT) libinflux.$(OBJEXT) \
-	string-funcs.$(OBJEXT) debug.$(OBJEXT) parse.$(OBJEXT)
+	string-funcs.$(OBJEXT) debug.$(OBJEXT) parse.$(OBJEXT) \
+	thpool.$(OBJEXT)
 xsight_OBJECTS = $(am_xsight_OBJECTS)
 xsight_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_$(V))
@@ -183,7 +184,7 @@ AUTOMAKE = ${SHELL} /home/rapier/xsight/missing automake-1.13
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -g -O0
+CFLAGS = -g -O2
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
@@ -202,7 +203,7 @@ INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 LDFLAGS = 
 LIBOBJS = 
-LIBS = -luuid -lconfig -lcurl -lestats 
+LIBS = -luuid -lconfig -lcurl -lestats -lpthread 
 LTLIBOBJS = 
 MAKEINFO = ${SHELL} /home/rapier/xsight/missing makeinfo
 MKDIR_P = /usr/bin/mkdir -p
@@ -261,10 +262,10 @@ target_alias =
 top_build_prefix = 
 top_builddir = .
 top_srcdir = .
-AM_CFLAGS = -O3 -Wall -Wextra -std=gnu99 -fgnu89-inline
-AM_LDFLAGS = -lestats -lcurl -luuid -lconfig
+AM_CFLAGS = -O0 -Wall -Wextra -std=gnu99 -fgnu89-inline
+AM_LDFLAGS = -lestats -lcurl -luuid -lconfig -lpthread
 xsight_SOURCES = xsight.c hash.c build_query.c options.c libinflux.c \
-		 string-funcs.c debug.c parse.c
+		 string-funcs.c debug.c parse.c thpool.c
 
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -380,6 +381,7 @@ include ./$(DEPDIR)/libinflux.Po
 include ./$(DEPDIR)/options.Po
 include ./$(DEPDIR)/parse.Po
 include ./$(DEPDIR)/string-funcs.Po
+include ./$(DEPDIR)/thpool.Po
 include ./$(DEPDIR)/xsight.Po
 
 .c.o:

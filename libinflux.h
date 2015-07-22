@@ -3,14 +3,24 @@
 #include <curl/curl.h>
 #ifndef libinflux__h
 #define libinflux__h
-#include <curl/curl.h>
 
-extern CURL *curl;
-extern void rest_init(char *, char *);
+typedef struct {
+    CURL *curl;
+    CURLcode resCode;
+    char *host_url;
+    char *db;
+    char *user;
+    char *pass;
+} influxConn;
+extern void rest_init();
 extern void rest_cleanup();
-extern CURLcode sendPost(char *, char *);
-extern CURLcode sendGet(char *, char *);
-extern CURLcode influxQuery(char *);
-extern CURLcode influxWrite(char *);
+extern influxConn* create_conn(char *, char *,char *, char *);
+extern char* build_write_url(influxConn*);
+extern char* build_query_url(influxConn*);
+extern CURLcode sendPost(influxConn *, char *, char *);
+extern CURLcode sendGet(influxConn *, char *, char *);
+extern CURLcode influxQuery(influxConn *, char *);
+extern CURLcode influxWrite(influxConn *, char *);
+
 
 #endif

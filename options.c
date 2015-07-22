@@ -153,54 +153,53 @@ int get_config(char *path, int tmp_debug) {
 		net_child = config_setting_get_member(net_stanza, network_name); 
 
 		sprintf (search_str, "networks.%s.group", network_name);
-		printf ("search: %s\n", search_str);
 
 		if (!config_setting_lookup_string(net_child, "group", &string)) { 
 			log_error("Monitored network %s's group name not specified in config file! Exiting.", network_name);
-			//return -1;
+			return -1;
 		}
 		log_debug("Network: %s, group: %s", network_name, string);
 		network->group = strdup(string);
 
 		if (!config_setting_lookup_string(net_child, "domain", &string)) {
 			log_error("Monitored network %s's domain not specified in config file! Exiting.", network_name);
-			//return -1;
+			return -1;
 		}
 		log_debug("Network: %s, domain_name: %s", network_name, string);
 		network->domain_name = strdup(string);
 
 		if (!config_setting_lookup_string(net_child, "host_url", &string)) {
 			log_error("Monitored network %s's hosturl not specified in config file! Exiting.", network_name);
-			//return -1;
+			return -1;
 		}
 		log_debug("Network: %s, host_url: %s", network_name, string);
 		network->influx_host_url = strdup(string);
 
 		if (!config_setting_lookup_string(net_child, "database", &string)) {
 			log_error("Monitored network %s's database not specified in config file! Exiting.", network_name);
-			//return -1;
+			return -1;
 		}
 		log_debug("Network: %s, database: %s", network_name, string);
 		network->influx_database = strdup(string);
 
 		if (!config_setting_lookup_string(net_child, "db_user", &string)) {
 			log_error("Monitored network %s's database user not specified in config file! Exiting.", network_name);
-			//return -1;
+			return -1;
 		}
 		log_debug("Network: %s, db_user: %s", network_name, string);
 		network->influx_user = strdup(string);
 
 		if (!config_setting_lookup_string(net_child, "password", &string)) {
 			log_error("Monitored network %s's database password not specified in config file! Exiting.", network_name);
-			//return -1;
+			return -1;
 		}
 		log_debug("Network: %s, password: %s", network_name, string);
 		network->influx_password = strdup(string);
 
 		if (!config_setting_lookup_int(net_child, "order", &order)) {
 			network->precedence = i;
-			//return -1;
 		}
+
 		log_debug("Network: %s, precedence: %d", network_name, order);
 		network->precedence = order;
 

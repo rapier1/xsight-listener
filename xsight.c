@@ -14,6 +14,7 @@
  *
  */
 #include "xsight.h"
+#include "thpool.h"
 
 int debugflag = 0;
 int daemonize = 0;
@@ -27,6 +28,8 @@ struct NetworksHash *networks = NULL;
 /* global struct for active connections/flows */
 struct ConnectionHash *activeflows = NULL;
 
+threadpool thpool;
+
 int filter_connection (struct estats_connection_info *conn) {
 	struct estats_error *err = NULL;
 	struct estats_connection_tuple_ascii asc;
@@ -39,16 +42,20 @@ int filter_connection (struct estats_connection_info *conn) {
 	/* if we have ips to exclude check them */
 	if (options.ex_ips_count != 0) {
 		/* if we get a match it returns 0 so skip it */
-		if (filter_ips(asc.local_addr, asc.rem_addr, 
-			       options.exclude_ips, options.ex_ips_count) == 0)
+		if ((match_ips(asc.local_addr, options.exclude_ips, 
+			      options.ex_ips_count) == 1) || 
+			(match_ips(asc.local_addr, options.exclude_ips, 
+				   options.ex_ips_count) == 1))
 			exip = 1;
 	}
 
 	/* if we have ips to include check them */
 	if (options.in_ips_count != 0) {
 		/* if we don't get a match it returns 1 so skip it */
-		if (filter_ips(asc.local_addr, asc.rem_addr, 
-			       options.include_ips, options.in_ips_count) == 0)
+		if ((match_ips(asc.local_addr, options.include_ips, 
+			      options.in_ips_count) == 1) || 
+			(match_ips(asc.local_addr, options.include_ips, 
+				   options.in_ips_count) == 1))
 			inip = 1;
 	}
 
@@ -192,11 +199,15 @@ int main(int argc, char *argv[])
 	/* when a new connection is matched to a specific monitored network */
 	/* store the curl handle in the active flow struct */
 	/* then, when connecting use that curl handle */
+	
+	rest_init();
 
 	if (hash_get_curl_handles() == -1) {
 		log_error("Unable to open all curl handles. Exiting");
 		//goto Cleanup;
 	}
+
+	thpool = thpool_init(4);
 
 	/* random seed init for uuid */
 	srand(time(NULL));
@@ -245,9 +256,9 @@ int main(int argc, char *argv[])
 				/* if it is not then add the connection to our hash */
 				temphash = add_connection(ci);
 				temphash->closed = 0;
-				add_flow_influx(temphash, ci);
-				read_metrics(temphash, cl);
-				add_time(temphash, cl, ci->cid, "StartTime");
+				add_flow_influx(thpool, temphash, ci);
+				read_metrics(thpool, temphash, cl);
+				add_time(thpool, temphash, cl, ci->cid, "StartTime");
 			}		
 		}
 		/* iterate over all of the flows we've collected*/
@@ -271,7 +282,7 @@ int main(int argc, char *argv[])
 			    && (temphash->closed != 1)) {
 				// get data
 				temphash->lastpoll = time(NULL);
-				read_metrics(temphash, cl);
+				read_metrics(thpool, temphash, cl);
 			}
 
 			/* everything is masked except for state */
@@ -286,8 +297,8 @@ int main(int argc, char *argv[])
 					 * be readded to the hash
 					 * so just wait for it to expire
 					 */
-					read_metrics(temphash, cl);
-					add_time(temphash, NULL, 0, "EndTime");
+					read_metrics(thpool, temphash, cl);
+					add_time(thpool, temphash, NULL, 0, "EndTime");
 					temphash->closed = 1;
 				}
 			}
