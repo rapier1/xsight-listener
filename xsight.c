@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
 		//goto Cleanup;
 	}
 
-	thpool = thpool_init(4);
+	thpool = thpool_init(1);
 
 	/* random seed init for uuid */
 	srand(time(NULL));
