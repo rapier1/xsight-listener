@@ -207,6 +207,16 @@ int main(int argc, char *argv[])
 		//goto Cleanup;
 	}
 
+	/* we're only using 1 additional thread to take care of the 
+	 * data transfers. We could use more but it gets real complicated
+	 * because in that case each transfer now has to use a new curl connection
+	 * instead of reusing the exiting set. Memory requirements *balloon*
+	 * likely because I don't know what I'm doing but this works and 
+	 * seems workable for now.
+	 * If you change your mind then create a new connection either in the 
+	 * threaded call or before you call it and pass it in the struct. Either
+	 * way it has to be free'd in the threaded call. 
+	 */
 	thpool = thpool_init(1);
 
 	/* random seed init for uuid */

@@ -48,7 +48,7 @@ char* build_write_url(influxConn *conn)
 
     //concatenate endpoint and parameters to host_url
     if(url){
-        snprintf(url, size, "%s%sdb=%s&u=%s&p=%s", conn->host_url, endpoint, 
+        snprintf(url, size, "%s%sdb=%s&u=%s&p=%s&precision=u", conn->host_url, endpoint, 
             conn->db, conn->user, conn->pass);
     }
 
@@ -134,6 +134,9 @@ CURLcode sendPost(influxConn *conn, char *url, char *data){
         curl_easy_setopt(conn->curl, CURLOPT_URL, url);
         curl_easy_setopt(conn->curl, CURLOPT_POSTFIELDSIZE, (long)strlen(data));
         curl_easy_setopt(conn->curl, CURLOPT_POSTFIELDS, data);
+	curl_easy_setopt(conn->curl, CURLOPT_TCP_KEEPALIVE, 1L);
+	curl_easy_setopt(conn->curl, CURLOPT_TCP_KEEPIDLE, 30L);
+	curl_easy_setopt(conn->curl, CURLOPT_TCP_KEEPINTVL, 10L);
         conn->resCode = curl_easy_perform(conn->curl);
     }
     free(url);

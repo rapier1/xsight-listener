@@ -13,10 +13,11 @@
  * if not, see http://opensource.org/licenses/MIT.
  *
  */
+#define _GNU_SOURCE 1
+#include <stdlib.h>
+#include <string.h>
 #include "build_query.h"
 #include "thpool.h"
-
-#define _GNU_SOURCE 1
 
 extern struct Options options;
 extern struct NetworksHash *networks;
@@ -31,7 +32,6 @@ void add_flow_influx(threadpool thpool, ConnectionHash *flow, struct estats_conn
 	char *influx_data;
 	char *temp_str;
 	char *tag_str;
-	CURLcode curl_res;
 	int length, size, total_size;
 	size = total_size = 0;
 
@@ -100,8 +100,7 @@ void add_flow_influx(threadpool thpool, ConnectionHash *flow, struct estats_conn
 	strncat(influx_data, temp_str, size);
 	free(temp_str);
 
-/* add the dest_port */
-
+	/* add the dest_port */
 	size = snprintf(NULL, 0, "dest_port%s%s\n", tag_str, asc.rem_port) + 1;
 	total_size += size;
 	temp_str = malloc(size + 1);
@@ -126,20 +125,13 @@ void add_flow_influx(threadpool thpool, ConnectionHash *flow, struct estats_conn
 	 * now send it to the influxdb using curl
 	 */
 
-	log_debug2("%s", influx_data);
-
 	job = malloc(sizeof(struct ThreadWrite));
 	snprintf(job->action, 32, "Added Flow: %d", conn->cid);
 	job->conn = flow->conn;
 	job->data = &influx_data[0];
 	thpool_add_work(thpool, (void*)threaded_influx_write, (void*)job);
-	sleep(1);
-//	thpool_wait(thpool);
-//	threaded_influx_write(job);
-
+	/* NB: job and influx data are free'd in threaded_influx_write */
 	free(tag_str);
-	free(influx_data);
-	free(job);
 Cleanup:
 	if (err != NULL) {
 		log_error("%s:\t%s\t%s tuple to ascii conversion error in add_flow_influx", 
@@ -155,7 +147,6 @@ void add_time(threadpool thpool, struct ConnectionHash *flow, struct estats_nl_c
 	uint64_t timestamp = 0;
 	char flowid_char[40];
 	char *influx_data;
-	CURLcode curl_res;
 	int length;
 
 	uuid_unparse(flow->flowid, flowid_char);
@@ -205,7 +196,7 @@ void add_time(threadpool thpool, struct ConnectionHash *flow, struct estats_nl_c
 		}		
 	} else {
 		/* StartTimeStamp is in microseconds since epoch so we have to convert
-		 * time() to msecs. 
+		 * time() to msecs for the EndTime
 		 */
 		timestamp = time(NULL) * 1000000;
 	}
@@ -220,18 +211,12 @@ void add_time(threadpool thpool, struct ConnectionHash *flow, struct estats_nl_c
 			  time_marker, flow->group, flow->domain_name, 
 			  options.dtn_id, flowid_char, timestamp);
 	
-	log_debug2("%s", influx_data);
-
 	job = malloc(sizeof(struct ThreadWrite));
 	snprintf(job->action, 32, "Added Time: %d", flow->cid);
 	job->conn = flow->conn;
 	job->data = &influx_data[0];
 	thpool_add_work(thpool, (void*)threaded_influx_write, (void*)job);
-	thpool_wait(thpool);
-//	threaded_influx_write(job);
-
-	free(influx_data);
-	free(job);
+	/* NB: job and influx data are free'd in threaded_influx_write */
 End:; /*this is in case the curl handle doesn't exist*/
 }
 
@@ -244,7 +229,6 @@ void read_metrics (threadpool thpool, struct ConnectionHash *flow, struct estats
 	char *tag_str;
 	char *influx_data;
 	char estats_val[128];
-	CURLcode curl_res;
 	int total_size = 0;
 	int i, length;
 	uint64_t timestamp = 0;
@@ -318,7 +302,7 @@ void read_metrics (threadpool thpool, struct ConnectionHash *flow, struct estats
 		 * when we are retreiving the data
 		 */
 
-		timestamp = flow->lastpoll * 1000000;
+		timestamp = flow->lastpoll * 1000000; /*influx expects the timestamp to be in microseconds*/
 		/* get the size of the new line */
 		size = snprintf(NULL, 0, "%s%s%s%"PRIu64"\n", estats_var_array[i].name, tag_str, estats_val, timestamp) + 1;
 
@@ -340,13 +324,8 @@ void read_metrics (threadpool thpool, struct ConnectionHash *flow, struct estats
 	job->conn = flow->conn;
 	job->data = &influx_data[0];
 	thpool_add_work(thpool, (void*)threaded_influx_write, (void*)job);
-	thpool_wait(thpool);
-//	threaded_influx_write(job);
-
-	log_debug2("%s", influx_data);
+	/* NB: job and influx data are free'd in threaded_influx_write */
 	free(tag_str); 
-	free(influx_data);
-	free(job);
 Cleanup:
 	estats_val_data_free(&esdata);
 	if (err != NULL) {
@@ -363,28 +342,13 @@ End: ; /*in case there is no curl handle*/
 /* context of the caller */
 void threaded_influx_write (struct ThreadWrite *job) {
 	CURLcode curl_res;
-	influxConn *conn = malloc(sizeof(influxConn));
-	char *data;
-
-	conn->curl = job->conn->curl;
-	conn->resCode = job->conn->resCode;
-	conn->host_url = strdupa(job->conn->host_url);
-	conn->db = strdupa(job->conn->db);
-	conn->user = strdupa(job->conn->user);
-	conn->pass = strdupa(job->conn->pass);
-
-	data = malloc(strlen((char *)job->data) + 1);
-	data = strndup((char *)job->data, strlen((char *)job->data));
-	printf ("%d\n", strlen((char *)job->data));
-	if ((curl_res = influxWrite(conn, data) != CURLE_OK)) {
+	if ((curl_res = influxWrite(job->conn, job->data) != CURLE_OK)) {
 		log_error("CURL failure: %s", curl_easy_strerror(curl_res));
 	} else {
 	 	log_debug("%s", job->action);
 	}
-	free (conn->pass);
-	free(conn->user);
-	free(conn->db);
-	free(conn->host_url);
-	free(conn);
-	free(data);
+	log_debug2("%s", job->data);
+	curl_easy_reset(job->conn->curl);
+	free(job->data);
+	free(job);
 }
