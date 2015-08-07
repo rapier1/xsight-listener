@@ -98,7 +98,7 @@ PROGRAMS = $(bin_PROGRAMS)
 am_xsight_OBJECTS = xsight.$(OBJEXT) hash.$(OBJEXT) \
 	build_query.$(OBJEXT) options.$(OBJEXT) libinflux.$(OBJEXT) \
 	string-funcs.$(OBJEXT) debug.$(OBJEXT) parse.$(OBJEXT) \
-	thpool.$(OBJEXT)
+	thpool.$(OBJEXT) tracer.$(OBJEXT)
 xsight_OBJECTS = $(am_xsight_OBJECTS)
 xsight_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_$(V))
@@ -184,7 +184,7 @@ AUTOMAKE = ${SHELL} /home/rapier/xsight/missing automake-1.13
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -g -O2
+CFLAGS = -g -O0
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
@@ -265,7 +265,7 @@ top_srcdir = .
 AM_CFLAGS = -O0 -Wall -Wextra -std=gnu99 -fgnu89-inline
 AM_LDFLAGS = -lestats -lcurl -luuid -lconfig -lpthread
 xsight_SOURCES = xsight.c hash.c build_query.c options.c libinflux.c \
-		 string-funcs.c debug.c parse.c thpool.c
+		 string-funcs.c debug.c parse.c thpool.c tracer.c
 
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -382,6 +382,7 @@ include ./$(DEPDIR)/options.Po
 include ./$(DEPDIR)/parse.Po
 include ./$(DEPDIR)/string-funcs.Po
 include ./$(DEPDIR)/thpool.Po
+include ./$(DEPDIR)/tracer.Po
 include ./$(DEPDIR)/xsight.Po
 
 .c.o:

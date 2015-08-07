@@ -22,6 +22,120 @@
 extern struct Options options;
 extern struct NetworksHash *networks;
 
+void threaded_path_trace(struct PathBuild *);
+
+void add_path_trace (threadpool tracepool, ConnectionHash *flow, struct estats_connection_info *conn) {
+	struct PathBuild *job;
+
+	job = malloc(sizeof (struct PathBuild));
+	job->conn = conn;
+	job->flow = flow;
+
+	thpool_add_work(tracepool, (void*)threaded_path_trace, (void*)job);
+
+}
+
+void threaded_path_trace (struct PathBuild *job) {
+	struct addrinfo *address = 0;
+	struct addrinfo hint;
+	struct estats_error* err = NULL;
+	struct estats_connection_tuple_ascii asc;
+	struct ThreadWrite *influxjob;
+	influxConn *curl_conn;
+	influxConn *myconn;
+	CURLcode curl_res;
+	char results[30][45];
+	char flowid_char[40];
+	char *tag_str;
+	char *temp_str;
+	char *influx_data;
+	int ttl = 0;
+	int i;
+	int ret = -1;
+	int size;
+	int total_size;
+
+	/* get the curl handle. Do this now so we don't waste time if the handle is null*/
+	curl_conn = hash_find_curl_handle(job->flow->group);
+	if (curl_conn == NULL) {
+		log_error("Can't add flow data. There is no existing curl connection to the data base for group %s\n", 
+			  job->flow->group);
+		goto Cleanup;
+	}
+
+
+	Chk(estats_connection_tuple_as_strings(&asc, &(job->conn)->tuple));
+
+	memset(&hint, '\0', sizeof (hint)); 
+	hint.ai_family = AF_UNSPEC; 
+
+	ret = getaddrinfo(asc.local_addr, NULL, &hint, &address);
+	if (ret < 0 ) {
+		perror ("getaddrinfo");
+		goto Cleanup;
+	}
+
+	if (address->ai_family == AF_INET) {
+		ttl = trace4(asc.rem_addr, asc.local_addr, results);
+	} else {
+		ttl = trace6(asc.rem_addr, asc.local_addr, results);
+	}
+	
+	if (ttl < 1)
+		goto Cleanup;
+
+	/*create the tag string*/
+
+	uuid_unparse(job->flow->flowid, flowid_char);
+
+	size = snprintf(NULL, 0, ",type=flowdata,group=%s,domain=%s,dtn=%s,flow=%s", 
+			  job->flow->group, job->flow->domain_name, options.dtn_id, flowid_char);
+	size++;
+	tag_str = malloc(size * sizeof(char) + 1);
+	snprintf(tag_str, size, ",type=flowdata,group=%s,domain=%s,dtn=%s,flow=%s value=", 
+		 job->flow->group, job->flow->domain_name, options.dtn_id, flowid_char);	
+
+	/* init the final command string for influx*/
+	influx_data = malloc(4);
+	*influx_data = '\0';
+
+	for (i = 1; i <= ttl; i++) {
+		/* add the src_ip */
+		size = snprintf(NULL, 0, "path%s,hop=%d value=\"%s\"\n", tag_str, i, results[i]) + 1;
+		total_size += size;
+		temp_str = malloc(size);
+		snprintf(temp_str, size, "path%s,hop=%d value=\"%s\"\n", tag_str, i, results[i]);
+		influx_data = realloc(influx_data, total_size);
+		strncat(influx_data, temp_str, size);
+		free(temp_str);
+	}
+	
+	printf("%s", influx_data);
+
+	influxjob = malloc(sizeof(struct ThreadWrite));
+	snprintf(influxjob->action, 32, "Added Path: %d", job->flow->cid);
+	influxjob->conn = job->flow->conn;
+	influxjob->data = &influx_data[0];
+	threaded_influx_write(influxjob);
+
+/* //	myconn = create_conn (curl_conn->host_url, curl_conn->db, curl_conn->user, curl_conn->pass); */
+
+/* 	if ((curl_res = influxWrite(myconn, influx_data) != CURLE_OK)) { */
+/* 		log_error("CURL failure: %s", curl_easy_strerror(curl_res)); */
+/* 	} else { */
+/* 		printf ("ADDED!\n"); */
+/* 	} */
+/* 	log_debug2("%s", influx_data); */
+/* //	curl_easy_reset(myconn);  */
+
+	freeaddrinfo(address);
+	free(tag_str);
+ 	free(job); 
+ 	free(influx_data); 
+Cleanup: ;
+	
+}
+
 /* get the identifying information and add it to the influx flow namespace*/
 /* the unique sequence_number */
 void add_flow_influx(threadpool thpool, ConnectionHash *flow, struct estats_connection_info *conn) {

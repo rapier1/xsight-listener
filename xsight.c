@@ -29,6 +29,7 @@ struct NetworksHash *networks = NULL;
 struct ConnectionHash *activeflows = NULL;
 
 threadpool thpool;
+threadpool tracepool;
 
 int filter_connection (struct estats_connection_info *conn) {
 	struct estats_error *err = NULL;
@@ -218,6 +219,7 @@ int main(int argc, char *argv[])
 	 * way it has to be free'd in the threaded call. 
 	 */
 	thpool = thpool_init(1);
+	tracepool = thpool_init(1);
 
 	/* random seed init for uuid */
 	srand(time(NULL));
@@ -269,6 +271,8 @@ int main(int argc, char *argv[])
 				add_flow_influx(thpool, temphash, ci);
 				read_metrics(thpool, temphash, cl);
 				add_time(thpool, temphash, cl, ci->cid, "StartTime");
+				add_path_trace(tracepool, temphash, ci);
+				//add_path_trace(ci);
 			}		
 		}
 		/* iterate over all of the flows we've collected*/
