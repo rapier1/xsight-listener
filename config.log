@@ -121,7 +121,7 @@ configure:3678: checking dependency style of gcc
 configure:3789: result: gcc3
 configure:3807: checking for library containing pthread_create
 configure:3838: gcc -o conftest -g -O2   conftest.c  >&5
-/tmp/ccWujZTr.o: In function `main':
+/tmp/ccygHiUK.o: In function `main':
 /home/rapier/xsight/newcode/conftest.c:22: undefined reference to `pthread_create'
 collect2: error: ld returned 1 exit status
 configure:3838: $? = 1
@@ -156,7 +156,7 @@ configure:3838: $? = 0
 configure:3855: result: -lpthread
 configure:3867: checking for library containing estats_read_vars
 configure:3898: gcc -o conftest -g -O2   conftest.c -lpthread  >&5
-/tmp/ccaqOaGx.o: In function `main':
+/tmp/cc82OBOR.o: In function `main':
 /home/rapier/xsight/newcode/conftest.c:22: undefined reference to `estats_read_vars'
 collect2: error: ld returned 1 exit status
 configure:3898: $? = 1
@@ -191,7 +191,7 @@ configure:3898: $? = 0
 configure:3915: result: -lestats
 configure:3927: checking for library containing curl_easy_init
 configure:3958: gcc -o conftest -g -O2   conftest.c -lestats -lpthread  >&5
-/tmp/ccMqFS7B.o: In function `main':
+/tmp/ccU5nHaW.o: In function `main':
 /home/rapier/xsight/newcode/conftest.c:22: undefined reference to `curl_easy_init'
 collect2: error: ld returned 1 exit status
 configure:3958: $? = 1
@@ -226,7 +226,7 @@ configure:3958: $? = 0
 configure:3975: result: -lcurl
 configure:3987: checking for library containing config_init
 configure:4018: gcc -o conftest -g -O2   conftest.c -lcurl -lestats -lpthread  >&5
-/tmp/ccKck0IG.o: In function `main':
+/tmp/ccf1Xaz0.o: In function `main':
 /home/rapier/xsight/newcode/conftest.c:22: undefined reference to `config_init'
 collect2: error: ld returned 1 exit status
 configure:4018: $? = 1
@@ -261,7 +261,7 @@ configure:4018: $? = 0
 configure:4035: result: -lconfig
 configure:4047: checking for library containing uuid_generate
 configure:4078: gcc -o conftest -g -O2   conftest.c -lconfig -lcurl -lestats -lpthread  >&5
-/tmp/ccN7RbXO.o: In function `main':
+/tmp/cc64dcch.o: In function `main':
 /home/rapier/xsight/newcode/conftest.c:22: undefined reference to `uuid_generate'
 collect2: error: ld returned 1 exit status
 configure:4078: $? = 1

@@ -19,6 +19,9 @@
 #define MAIN_H
 #define GNU_SOURCE 1
 #include <sys/stat.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "scripts.h"
 #include "curl/curl.h"
 #include "debug.h"
@@ -26,6 +29,7 @@
 #include "build_query.h"
 #include "parse.h"
 #include "version.h"
+#include "thpool.h"
 
 typedef struct CmdLineCID {
 	int cid;

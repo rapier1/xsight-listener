@@ -15,10 +15,7 @@
  *
  */
 
-#include<stdarg.h>
-#include<stdio.h>
-#include<time.h>
-#include<string.h>
+
 #include "debug.h"
 
 extern int debugflag;

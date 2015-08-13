@@ -20,14 +20,7 @@
  * structures needed to filter the tcpdata
  */
 #define _GNU_SOURCE 1
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "scripts.h"
-#include "string-funcs.h"
 #include "parse.h"
-#include "debug.h"
-#include <linux/in6.h>
 
 extern int debugflag;
 // if the dest port or source port exists in the array of ports
@@ -63,7 +56,7 @@ bool cidr4_match(int addr, int net, uint8_t bits) {
 	return !((addr ^ net) & htonl(0xFFFFFFFFu << (32 - bits)));
 }
 
-/* taken from a post on stackover flow from user cypres and then modified*/
+/* taken from a post on stackoverflow from user cypres and then modified*/
 bool cidr6_match( struct sockaddr_in6 *address, struct sockaddr_in6 *network, uint8_t bits) {
 	const uint32_t *a = address->sin6_addr.s6_addr32;
 	const uint32_t *n = network->sin6_addr.s6_addr32;
@@ -120,7 +113,7 @@ int match_ips (char *remote, char **ips, int index) {
 	ret = getaddrinfo(remote, NULL, &hint, &remres);
 	if (ret != 0){
 		// we shouldn't see a bad address here but we should check anyway
-		fprintf(stderr, "getaddrinfo: %s (likely an invalid remote ip address)\n", 
+		log_error("getaddrinfo: %s (likely an invalid remote ip address)\n", 
 			gai_strerror(ret));
 		free(remres);
 		return 0;
@@ -162,7 +155,7 @@ int match_ips (char *remote, char **ips, int index) {
 		// go through the above for each ip address we are testing against
 		ret = getaddrinfo(ip, NULL, &hint, &testres);
 		if (ret != 0) {
-			fprintf(stderr, "getaddrinfo: %s (likely an invalid user defined ip address)\n", 
+			log_error("getaddrinfo: %s (likely an invalid user defined ip address)\n", 
 				gai_strerror(ret));
 			continue;
 		}

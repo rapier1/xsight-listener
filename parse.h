@@ -21,6 +21,16 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
+#define _GNU_SOURCE 1
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "scripts.h"
+#include "string-funcs.h"
+#include "debug.h"
+#include <linux/in6.h>
+
+
 int include_port (int, int, int [], int);
 int exclude_port (int, int, int [], int);
 int exclude_app (char*, char**, int);

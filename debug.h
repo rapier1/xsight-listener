@@ -17,6 +17,10 @@
 
 #ifndef DEBUG_H 
 #define DEBUG_H
+#include <stdarg.h>
+#include <stdio.h>
+#include <time.h>
+#include <string.h>
 #include <syslog.h>
 
 typedef enum LogLevels {

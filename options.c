@@ -20,7 +20,7 @@ extern struct Options options;
 extern struct Networks *networks;
 
 /* read the configuration file */
-int get_config(char *path, int tmp_debug) {
+int options_get_config(char *path, int tmp_debug) {
 	char search_str[64];
 	int value, count, i, order;
 	const char *string;
@@ -133,7 +133,7 @@ int get_config(char *path, int tmp_debug) {
 		return -1;
 	}
 	options.network_count = count;
-	log_debug("Monitored networks in 'networkd' stanza: %d\n", count);
+	log_debug("Monitored networks in 'networks' stanza: %d\n", count);
 	/* add the information to the hash */
 	for (i = 0; i < count; i++) {
 		int j = 0;
@@ -215,7 +215,7 @@ int get_config(char *path, int tmp_debug) {
 			network->net_addrs[j] = strdup(string);
 			log_debug("%s: Added network : %s", network_name, network->net_addrs[j]);
 		}
-		add_network(network, i);
+		hash_add_network(network, i);
 	}
 	/* we need to sort the network hash in precedence order */
 	hash_sort_by_precedence();
@@ -225,7 +225,7 @@ int get_config(char *path, int tmp_debug) {
 
 
 
-void freeoptions () {
+void options_freeoptions () {
 	int i;
 	free((void *)options.domain_name);
 	free((void *)options.dtn_id);

@@ -97,8 +97,8 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_xsight_OBJECTS = xsight.$(OBJEXT) hash.$(OBJEXT) \
 	build_query.$(OBJEXT) options.$(OBJEXT) libinflux.$(OBJEXT) \
-	string-funcs.$(OBJEXT) debug.$(OBJEXT) parse.$(OBJEXT) \
-	thpool.$(OBJEXT) tracer.$(OBJEXT)
+	debug.$(OBJEXT) parse.$(OBJEXT) thpool.$(OBJEXT) \
+	tracer.$(OBJEXT)
 xsight_OBJECTS = $(am_xsight_OBJECTS)
 xsight_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -265,7 +265,7 @@ top_srcdir = @top_srcdir@
 AM_CFLAGS = -O0 -Wall -Wextra -std=gnu99 -fgnu89-inline
 AM_LDFLAGS = -lestats -lcurl -luuid -lconfig -lpthread
 xsight_SOURCES = xsight.c hash.c build_query.c options.c libinflux.c \
-		 string-funcs.c debug.c parse.c thpool.c tracer.c
+		debug.c parse.c thpool.c tracer.c
 
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -380,7 +380,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libinflux.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/string-funcs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/thpool.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tracer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xsight.Po@am__quote@

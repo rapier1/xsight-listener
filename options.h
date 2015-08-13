@@ -48,8 +48,7 @@ typedef struct Options {
         char **exclude_apps; 
 } Options;
 
-void freeoptions ();
-int get_config(char *, int);
-int get_network_config (char *);
+void options_freeoptions ();
+int options_get_config(char *, int);
 
 #endif

@@ -14,10 +14,10 @@
  *
  */
 #include "xsight.h"
-#include "thpool.h"
 
 int debugflag = 0;
 int daemonize = 0;
+int exitnow = 0;
 
 /* global options struct*/
 struct Options options;
@@ -27,9 +27,6 @@ struct NetworksHash *networks = NULL;
 
 /* global struct for active connections/flows */
 struct ConnectionHash *activeflows = NULL;
-
-threadpool thpool;
-threadpool tracepool;
 
 int filter_connection (struct estats_connection_info *conn) {
 	struct estats_error *err = NULL;
@@ -115,15 +112,22 @@ Cleanup:
 	if (inap)
 		return 0;
 
-	/* we should nver get here */
+	/* we should never get here */
 	/* but if we do then assume 
 	 * the connection is odd enough to include
 	 */
 	return 1;
 }
 
-int main(int argc, char *argv[])
-{
+
+void sighandler(int signo) {
+	if (signo == SIGINT) {
+		log_error("\nClosing xsight due to ctrl-c interrupt\n");
+		exitnow = 1;
+	}
+}
+
+int main(int argc, char *argv[]) {
 
 	struct estats_error* err = NULL;
 	struct estats_nl_client* cl = { 0 };
@@ -133,6 +137,8 @@ int main(int argc, char *argv[])
 	struct estats_mask state_mask;
 	struct ConnectionHash* temphash = NULL;
 	struct ConnectionHash* vtemphash = NULL;
+	threadpool curlpool = NULL;
+	threadpool tracepool = NULL;
 	char *config_filepath;
 	int i, j, opt, tmp_debug;
 	pid_t pid, sid;
@@ -140,7 +146,11 @@ int main(int argc, char *argv[])
 	config_filepath = "/home/rapier/xsight/newcode/xsight.cfg";
 
 	tmp_debug = -1;
-	daemonize = 0;
+	j = daemonize = 0;
+
+	if (signal(SIGINT, sighandler) == SIG_ERR) {
+		log_error ("SIGINT handler not functional");
+	}
 
 	while ((opt = getopt(argc, argv, "d:f:hD")) != -1) {
 		switch (opt) {
@@ -163,7 +173,7 @@ int main(int argc, char *argv[])
 	if (daemonize == 1) {
 		pid = fork();
 		if (pid < 0) {
-			fprintf(stderr, "Could not daemonize xsight process! Exiting.\n");
+			log_error("Could not daemonize xsight process! Exiting.\n");
 			exit(EXIT_FAILURE);
 		} 
 		if (pid > 0)
@@ -173,13 +183,11 @@ int main(int argc, char *argv[])
 		
 		sid = setsid();
 		if (sid < 0) {
-			fprintf(stderr, "Could not create new SID for child process! Exiting.\n");
 			log_error("Could not create new SID for child process.");
 			exit(EXIT_FAILURE);
 		}
 		/* Change the current working directory */
 		if ((chdir("/")) < 0) {
-			fprintf (stderr, "Could not chdir to /. Exiting.\n"); 
 			log_error ("Could not chidir to /.");
 			exit(EXIT_FAILURE);
 		}
@@ -191,8 +199,9 @@ int main(int argc, char *argv[])
 	}	
 
 
-	if (get_config(config_filepath, tmp_debug) == -1) {
-		return -1;
+	if (options_get_config(config_filepath, tmp_debug) == -1) {
+		log_error("Could not find or process configuration file. Exiting."); 
+		exit(EXIT_FAILURE);
 	}
 
 	/* iterate over the various networks and generate a curl handle for each of them */
@@ -205,7 +214,7 @@ int main(int argc, char *argv[])
 
 	if (hash_get_curl_handles() == -1) {
 		log_error("Unable to open all curl handles. Exiting");
-		//goto Cleanup;
+		goto Cleanup;
 	}
 
 	/* we're only using 1 additional thread to take care of the 
@@ -218,8 +227,10 @@ int main(int argc, char *argv[])
 	 * threaded call or before you call it and pass it in the struct. Either
 	 * way it has to be free'd in the threaded call. 
 	 */
-	thpool = thpool_init(1);
-	tracepool = thpool_init(1);
+	curlpool = thpool_init(1);
+	
+	/* we can use mutliple threads for the path tracing feature */
+	tracepool = thpool_init(4);
 
 	/* random seed init for uuid */
 	srand(time(NULL));
@@ -239,10 +250,9 @@ int main(int argc, char *argv[])
 	/* init the nl client and gather the connection information */
 	Chk(estats_nl_client_init(&cl));
 
-	j = 0;
 	while (1) {
-		log_debug("Connection scan: %d", j);
 		j++;
+		log_debug("Connection scan: %d", j);
 
 		Chk(estats_connection_list_new(&clist));
 		Chk(estats_list_conns(clist, cl));
@@ -256,7 +266,7 @@ int main(int argc, char *argv[])
 		estats_list_for_each(&clist->connection_info_head, ci, list) {
 			/* check to see if the CID is already in our hash of active connections*/
 			temphash = NULL;
-			temphash = find_cid(ci->cid);
+			temphash = hash_find_cid(ci->cid);
 			if (temphash != NULL) {
 				/* if it is then set the seen flag to 1 */
 				temphash->seen = 1;
@@ -266,13 +276,12 @@ int main(int argc, char *argv[])
 					continue;
 				}
 				/* if it is not then add the connection to our hash */
-				temphash = add_connection(ci);
+				temphash = hash_add_connection(ci);
 				temphash->closed = 0;
-				add_flow_influx(thpool, temphash, ci);
-				read_metrics(thpool, temphash, cl);
-				add_time(thpool, temphash, cl, ci->cid, "StartTime");
-				add_path_trace(tracepool, temphash, ci);
-				//add_path_trace(ci);
+				add_flow_influx(curlpool, temphash, ci);
+				read_metrics(curlpool, temphash, cl);
+				add_time(curlpool, temphash, cl, ci->cid, "StartTime");
+				add_path_trace(curlpool, tracepool, temphash, ci);
 			}		
 		}
 		/* iterate over all of the flows we've collected*/
@@ -280,7 +289,7 @@ int main(int argc, char *argv[])
 			/* delete stale flows from the hash */
 			if (temphash->seen == 0) {
 				log_debug("Deleting flow: %d", temphash->cid);
-				if (delete_flow(temphash->cid) != 1) {
+				if (hash_delete_flow(temphash->cid) != 1) {
 					log_error("Error deleting flow %d from table.", temphash->cid);
 				}
 				continue;
@@ -296,7 +305,7 @@ int main(int argc, char *argv[])
 			    && (temphash->closed != 1)) {
 				// get data
 				temphash->lastpoll = time(NULL);
-				read_metrics(thpool, temphash, cl);
+				read_metrics(curlpool, temphash, cl);
 			}
 
 			/* everything is masked except for state */
@@ -311,8 +320,8 @@ int main(int argc, char *argv[])
 					 * be readded to the hash
 					 * so just wait for it to expire
 					 */
-					read_metrics(thpool, temphash, cl);
-					add_time(thpool, temphash, NULL, 0, "EndTime");
+					read_metrics(curlpool, temphash, cl);
+					add_time(curlpool, temphash, NULL, 0, "EndTime");
 					temphash->closed = 1;
 				}
 			}
@@ -320,21 +329,29 @@ int main(int argc, char *argv[])
 	Continue:
 		estats_val_data_free(&esdata);
 		estats_connection_list_free(&clist);
-		log_debug("Hash count: %d", count_hash());
+		log_debug("Hash count: %d", hash_count_hash());
+		if (exitnow)
+			goto Cleanup;
 		sleep(options.conn_interval);
 	}
 	
  Cleanup:
 	estats_nl_client_destroy(&cl);
 
+	/* destroy the threadpools*/
+	thpool_destroy(curlpool);
+	thpool_destroy(tracepool);
+
 	/* close the rest connection*/
-	rest_cleanup();
+	hash_close_curl_handles();
 
 	/* free the hash */
-	clear_hash();
+	hash_clear_hash();
 
 	/* free the option struct*/
-	freeoptions();
+	options_freeoptions();
+	
+	curl_global_cleanup();
 
 	if (err != NULL) {
 		PRINT_AND_FREE(err);

@@ -6,7 +6,7 @@
 #include <curl/curl.h>
 #include "libinflux.h"
 
-int debug = 1;
+int debug = 0;
 
 /* Set-up and tear-down functions */
 
@@ -130,11 +130,11 @@ CURLcode influxWrite(influxConn *conn, char *data){
  * Sends request to influx host defined in conn. Returns resulting CURLcode.
  */
 CURLcode sendPost(influxConn *conn, char *url, char *data){
-	printf("addr %p\n", conn->curl);
     if(conn->curl){
         curl_easy_setopt(conn->curl, CURLOPT_URL, url);
         curl_easy_setopt(conn->curl, CURLOPT_POSTFIELDSIZE, (long)strlen(data));
         curl_easy_setopt(conn->curl, CURLOPT_POSTFIELDS, data);
+	curl_easy_setopt(conn->curl, CURLOPT_CONNECT_ONLY, 1L); 	
 	curl_easy_setopt(conn->curl, CURLOPT_TCP_KEEPALIVE, 1L);
 	curl_easy_setopt(conn->curl, CURLOPT_TCP_KEEPIDLE, 30L);
 	curl_easy_setopt(conn->curl, CURLOPT_TCP_KEEPINTVL, 10L);

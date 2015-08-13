@@ -52,13 +52,14 @@ typedef struct NetworksHash {
 } NetworksHash;
 
 influxConn *hash_find_curl_handle(const char *);
+void hash_close_curl_handles();
 int hash_get_tags(struct estats_connection_tuple_ascii *, struct ConnectionHash *);
 void hash_sort_by_precedence ();
 int hash_get_curl_handles ();
-void add_network(NetworksHash *, int);
-struct ConnectionHash *find_cid (int);
-struct ConnectionHash *add_connection (struct estats_connection_info *);
-int delete_flow (int);
-void clear_hash();
-int count_hash();
+void hash_add_network(NetworksHash *, int);
+struct ConnectionHash *hash_find_cid (int);
+struct ConnectionHash *hash_add_connection (struct estats_connection_info *);
+int hash_delete_flow (int);
+void hash_clear_hash();
+int hash_count_hash();
 #endif
