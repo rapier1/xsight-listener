@@ -73,7 +73,7 @@ void threaded_path_trace (struct PathBuild *job) {
 
 
 	/* get the ascii tuple information for the connection we care about */
-	Chk(estats_connection_tuple_as_strings(&asc, &(job->conn)->tuple));
+	Chk(estats_connection_tuple_as_strings(&asc, &(job->conn)->tuple)); //Should this check ever fail? i.e. should the error be logged? -BDL
 
 	/* determine if the *source* address is ipv4 or ipv6*/
 	memset(&hint, '\0', sizeof (hint)); 
