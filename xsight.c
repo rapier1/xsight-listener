@@ -143,6 +143,7 @@ int main(int argc, char *argv[]) {
 	int i, j, opt, tmp_debug;
 	pid_t pid, sid;
 
+    /*TODO: replace with better default path. -BDL*/
 	config_filepath = "/home/rapier/xsight/newcode/xsight.cfg";
 
 	tmp_debug = -1;
@@ -209,7 +210,9 @@ int main(int argc, char *argv[]) {
 	/* when a new connection is matched to a specific monitored network */
 	/* store the curl handle in the active flow struct */
 	/* then, when connecting use that curl handle */
-	
+
+    // ^ is this comment block talking about hash_get_curl_handles? -BDL
+
 	rest_init();
 
 	if (hash_get_curl_handles() == -1) {

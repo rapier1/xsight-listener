@@ -99,7 +99,7 @@ void threaded_path_trace (struct PathBuild *job) {
 	 * list that we can go thorugh
 	 */
 	if (local_address->ai_family != remote_address->ai_family) {
-		freeaddrinfo(remote_address);
+        freeaddrinfo(remote_address);
 		freeaddrinfo(local_address);
 		log_error("path_trace: Local and remote address families do not match");
 		goto Cleanup;

@@ -19,7 +19,7 @@
 #include "tracer.h"
 
 int trace4(char *dest, char *src, char ips[30][45]) {
-	int max_ttl=30;
+	int max_ttl=30; /* TODO: might want to make this a configurable value. -BDL */
 	u_short sport=0; /* use ephemeral */
 	u_short dport=33434;
 	const char *message = "xsighting for all";
