@@ -143,8 +143,7 @@ int main(int argc, char *argv[]) {
 	int i, j, opt, tmp_debug;
 	pid_t pid, sid;
 
-    /*TODO: replace with better default path. -BDL*/
-	config_filepath = "/home/rapier/xsight/newcode/xsight.cfg";
+	config_filepath = "/usr/local/xsight.cfg";
 
 	tmp_debug = -1;
 	j = daemonize = 0;
@@ -205,16 +204,13 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
+	rest_init();
+
 	/* iterate over the various networks and generate a curl handle for each of them */
 	/* store a pointer to the curl handle in the entry in the hash */
 	/* when a new connection is matched to a specific monitored network */
 	/* store the curl handle in the active flow struct */
 	/* then, when connecting use that curl handle */
-
-    // ^ is this comment block talking about hash_get_curl_handles? -BDL
-
-	rest_init();
-
 	if (hash_get_curl_handles() == -1) {
 		log_error("Unable to open all curl handles. Exiting");
 		goto Cleanup;
