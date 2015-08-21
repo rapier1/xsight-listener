@@ -35,6 +35,8 @@ void hash_add_network(struct NetworksHash *n, int network_id) {
  */
 influxConn *hash_find_curl_handle(const char *group) {
 	struct NetworksHash *current, *temp;
+	if (!group || group == NULL) 
+		return NULL;
 	HASH_ITER(hh, networks, current, temp) {
 		if (strcmp(current->group, group) == 0) {
 		        break;
@@ -118,8 +120,8 @@ int hash_get_tags(struct estats_connection_tuple_ascii *asc, struct ConnectionHa
 								  current->net_addrs, 
 								  current->net_addrs_count))) {
 
-			flow->group = strdup(current->group);
-			flow->domain_name = strdup(current->domain_name);
+			flow->group = strndup(current->group, strlen(current->group));
+			flow->domain_name = strndup(current->domain_name, strlen(current->domain_name));
 			return 1;
 		}
 	}
@@ -134,6 +136,8 @@ int hash_delete_flow (int cid) {
 	if (current != NULL) {
 		log_debug("Deleting flow: %d", current->cid);
 		HASH_DEL(activeflows, current);
+		free((void *)(current->group));
+		free((void *)(current->domain_name));
 		free(current);
 		return 1;
 	}
@@ -161,7 +165,8 @@ void hash_clear_hash () {
 		for (i = 0; i< curnet->net_addrs_count; i++) {
 			free((void *)curnet->net_addrs[i]);
 		}
-		free(curnet->net_addrs);
+		if (curnet->net_addrs_count)
+			free(curnet->net_addrs);
 		free(curnet);
 	}
 }

@@ -25,15 +25,43 @@ void threaded_influx_write (struct ThreadWrite *);
 /* this is just used to create the job struct 
  *  and call the threaded function 
  */
-void add_path_trace (threadpool curlpool, threadpool tracepool, ConnectionHash *flow, struct estats_connection_info *conn) {
+void add_path_trace (threadpool curlpool, threadpool tracepool, 
+		     ConnectionHash *flow, struct estats_connection_info *conn) {
+	struct estats_error* err = NULL;
+	struct estats_connection_tuple_ascii asc;
 	struct PathBuild *job;
-
+	
+	/* get the ascii tuple information for the connection we care about */
+	Chk(estats_connection_tuple_as_strings(&asc, &conn->tuple)); 
+	
+	/* all the data in the flow struct has to be copied over to the 
+	 * job struct. The flow might be freed while the path is being traced
+	 * which leads to some badness (null pointers etc).
+	 */
 	job = malloc(sizeof (struct PathBuild));
-	job->conn = conn;
-	job->flow = flow;
+//	strncpy(job->local_addr, asc.local_addr, strlen(asc.local_addr));
+//	strncpy(job->rem_addr, asc.rem_addr, strlen(asc.rem_addr));
+	job->local_addr = strndup(asc.local_addr, strlen(asc.local_addr));
+	job->rem_addr = strndup(asc.rem_addr, strlen(asc.rem_addr));
+	job->group = strndup(flow->group, strlen(flow->group)); 
+	job->domain_name = strndup(flow->domain_name, strlen(flow->domain_name));
+	uuid_copy(job->flowid, flow->flowid);
+	job->cid = flow->cid;
+	job->influx_conn = flow->conn;
 	job->mythread = curlpool;
-
+	
+	/* add it to the thread pool */
 	thpool_add_work(tracepool, (void*)threaded_path_trace, (void*)job);
+	
+Cleanup:
+	if (err != NULL) {
+		char flowid_char[40];
+		uuid_unparse(flow->flowid, flowid_char);
+		log_error("%s:\t%s\t%s tuple to ascii conversion error in add_flow_influx", 
+			  flowid_char, estats_error_get_extra(err), 
+			  estats_error_get_message(err));
+		estats_error_free(&err);
+	}
 }
 
 /* All of the real work for the traceroute is done here
@@ -48,11 +76,9 @@ void threaded_path_trace (struct PathBuild *job) {
 	struct addrinfo *local_address = 0;
 	struct addrinfo *remote_address = 0;
 	struct addrinfo hint;
-	struct estats_error* err = NULL;
-	struct estats_connection_tuple_ascii asc;
 	struct ThreadWrite *influxjob;
 	influxConn *curl_conn;
-	char results[30][45];
+	char results[32][45]; /* hops are limited to 30 but start at 1 */
 	char flowid_char[40];
 	char *tag_str;
 	char *temp_str;
@@ -63,33 +89,31 @@ void threaded_path_trace (struct PathBuild *job) {
 	int size = 0;
 	int total_size = 0;
 
+	memset(results, '\0', 32*45); /*initialize the results array to null */
+
 	/* get the curl handle. Do this now so we don't waste time if the handle is null*/
-	curl_conn = hash_find_curl_handle(job->flow->group);
+	curl_conn = hash_find_curl_handle(job->group);
 	if (curl_conn == NULL) {
 		log_error("Can't add flow data. There is no existing curl connection to the data base for group %s\n", 
-			  job->flow->group);
+			  job->group);
 		goto Cleanup;
 	}
-
-
-	/* get the ascii tuple information for the connection we care about */
-	Chk(estats_connection_tuple_as_strings(&asc, &(job->conn)->tuple)); 
 
 	/* determine if the *source* address is ipv4 or ipv6*/
 	memset(&hint, '\0', sizeof (hint)); 
 	hint.ai_family = AF_UNSPEC; 
 
-	ret = getaddrinfo(asc.local_addr, NULL, &hint, &local_address);
+	ret = getaddrinfo(job->local_addr, NULL, &hint, &local_address);
 	if (ret < 0 ) {
 		freeaddrinfo(local_address);
-		log_error("Badly formed local address in path_trace: %s", asc.local_addr);
+		log_error("Badly formed local address in path_trace: %s", job->local_addr);
 		goto Cleanup;
 	}
 
-	ret = getaddrinfo(asc.rem_addr, NULL, &hint, &remote_address);
+	ret = getaddrinfo(job->rem_addr, NULL, &hint, &remote_address);
 	if (ret < 0 ) {
 		freeaddrinfo(remote_address);
-		log_error("Badly formed remote address in path_trace: %s", asc.local_addr);
+		log_error("Badly formed remote address in path_trace: %s", job->local_addr);
 		goto Cleanup;
 	}
 
@@ -109,9 +133,9 @@ void threaded_path_trace (struct PathBuild *job) {
 	 * ttl. This value corresponds to the size of the array
 	 */
 	if (local_address->ai_family == AF_INET) {
-		ttl = trace4(asc.rem_addr, asc.local_addr, results);
+		ttl = trace4(job->rem_addr, job->local_addr, results);
 	} else {
-		ttl = trace6(asc.rem_addr, asc.local_addr, results);
+		ttl = trace6(job->rem_addr, job->local_addr, results);
 	}
 	
 	/* this should never happen */
@@ -124,15 +148,15 @@ void threaded_path_trace (struct PathBuild *job) {
 	/*create the tag string*/
 
 	/* get the uuid in char format */
-	uuid_unparse(job->flow->flowid, flowid_char);
+	uuid_unparse(job->flowid, flowid_char);
 
 	/* determine the size of the tag string so we can malloc it */
-	size = snprintf(NULL, 0, ",type=flowdata,group=%s,domain=%s,dtn=%s,flow=%s", 
-			  job->flow->group, job->flow->domain_name, options.dtn_id, flowid_char);
+	size = snprintf(NULL, 0, ",type=flowdata,group=%s,domain=%s,dtn=%s,flow=%s",
+			  job->group, job->domain_name, options.dtn_id, flowid_char);
 	size++;
 	tag_str = malloc(size * sizeof(char) + 1);
-	snprintf(tag_str, size, ",type=flowdata,group=%s,domain=%s,dtn=%s,flow=%s", 
-		 job->flow->group, job->flow->domain_name, options.dtn_id, flowid_char);	
+	snprintf(tag_str, size, ",type=flowdata,group=%s,domain=%s,dtn=%s,flow=%s",
+		 job->group, job->domain_name, options.dtn_id, flowid_char);
 	tag_str[size-1] = '\0';
 	
 	/* init the final command string for influx*/
@@ -156,23 +180,22 @@ void threaded_path_trace (struct PathBuild *job) {
 
 	/* create the job struct for the curl write. This is freed in that function*/
 	influxjob = malloc(sizeof(struct ThreadWrite));
-	snprintf(influxjob->action, 32, "Added Path: %d", job->flow->cid);
-	influxjob->conn = job->flow->conn;
+	snprintf(influxjob->action, 32, "Added Path: %d", job->cid);
+	influxjob->conn = job->influx_conn;
 	influxjob->data = &influx_data[0];
 	/* add this to the curl thread pool */
 	thpool_add_work(job->mythread, (void*)threaded_influx_write, (void*)influxjob);
 
 	free(tag_str);
+	free((void *)(job->local_addr));
+	free((void *)(job->rem_addr));
+	free((void *)(job->group));
+	free((void *)(job->domain_name));
  	free(job); 
 	freeaddrinfo(local_address);
 	freeaddrinfo(remote_address);
-Cleanup:
-	if (err != NULL) {
-		log_error("%s:\t%s\t%s tuple to ascii conversion error in add_flow_influx", 
-			  flowid_char, estats_error_get_extra(err), 
-			  estats_error_get_message(err));
-		estats_error_free(&err);
-	}
+Cleanup: 
+	; /*just gets us out of the function */
 }
 
 /* get the identifying information and add it to the influx flow namespace*/
@@ -225,7 +248,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	tag_str = malloc(length * sizeof(char) + 1);
 	snprintf(tag_str, length, ",type=flowdata,group=%s,domain=%s,dtn=%s,flow=%s value=", 
 		 flow->group, flow->domain_name, options.dtn_id, flowid_char);
-	tag_str[size-1] = '\0';
+	tag_str[length-1] = '\0';
 	
 	/* add the src_ip */
 	size = snprintf(NULL, 0, "src_ip%s\"%s\"\n", tag_str, asc.local_addr) + 1;

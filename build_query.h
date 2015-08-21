@@ -19,6 +19,7 @@
 #define BUILD_QUERY_H
 #include <stdlib.h>
 #include <string.h>
+
 #include "hash.h"
 #include "libinflux.h"
 #include "options.h"
@@ -34,7 +35,13 @@ struct ThreadWrite {
 
 struct PathBuild {
 	struct estats_connection_info *conn;
-	struct ConnectionHash *flow;
+	const char *group;
+	const char *domain_name;
+	char *local_addr;
+	char *rem_addr;
+	uuid_t flowid;
+	int cid;
+	influxConn *influx_conn;
 	threadpool mythread;
 } PathBuild;
 

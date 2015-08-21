@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
 	int i, j, opt, tmp_debug;
 	pid_t pid, sid;
 
-	config_filepath = "/usr/local/xsight.cfg";
+	config_filepath = "/usr/local/etc/xsight.cfg";
 
 	tmp_debug = -1;
 	j = daemonize = 0;

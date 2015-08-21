@@ -342,6 +342,9 @@ static void* thread_do(struct thread* thread_p){
 	/* Register signal handler */
 	struct sigaction act;
 	act.sa_handler = thread_hold;
+	act.sa_flags = 0;
+	sigemptyset(&act.sa_mask);
+	sigaddset(&act.sa_mask, SIGINT);
 	if (sigaction(SIGUSR1, &act, NULL) == -1) {
 		fprintf(stderr, "thread_do(): cannot handle SIGUSR1");
 	}

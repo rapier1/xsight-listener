@@ -184,7 +184,7 @@ AUTOMAKE = ${SHELL} /home/rapier/xsight/missing automake-1.13
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -g -O2
+CFLAGS = -O0 -g 
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
@@ -201,7 +201,7 @@ INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
-LDFLAGS = 
+LDFLAGS =
 LIBOBJS = 
 LIBS = -luuid -lconfig -lcurl -lestats -lpthread 
 LTLIBOBJS = 
