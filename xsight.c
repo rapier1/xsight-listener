@@ -265,6 +265,7 @@ int main(int argc, char *argv[]) {
 		estats_list_for_each(&clist->connection_info_head, ci, list) {
 			/* check to see if the CID is already in our hash of active connections*/
 			temphash = NULL;
+			/* TODO: the following line might taking up too much time. What could be faster?*/
 			temphash = hash_find_cid(ci->cid);
 			if (temphash != NULL) {
 				/* if it is then set the seen flag to 1 */

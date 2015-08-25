@@ -184,7 +184,7 @@ AUTOMAKE = ${SHELL} /home/rapier/xsight/missing automake-1.13
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -O0 -g 
+CFLAGS = -O2 -g  
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo

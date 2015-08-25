@@ -84,9 +84,9 @@ int hash_get_curl_handles () {
 
 /* find a specific connection ID in the hash */
 struct ConnectionHash *hash_find_cid(int cid) {
-        struct ConnectionHash *s;
-	HASH_FIND_INT(activeflows, &cid, s );  
-	return s;
+        struct ConnectionHash *temphash;
+	HASH_FIND_INT(activeflows, &cid, temphash );  
+	return temphash;
 };
 
 /* add the new connection to the hash */
@@ -181,11 +181,5 @@ int _by_precedence (NetworksHash *a, NetworksHash *b) {
 
 /* used for debugging purposes mostly but may be useful in the future*/
 int hash_count_hash () {
-	int i;
-	i = 0;
-	struct ConnectionHash *current, *temp;
-	HASH_ITER(hh, activeflows, current, temp) {
-		i++;
-	}
-	return i;
+	return HASH_COUNT(activeflows);
 }

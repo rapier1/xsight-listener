@@ -39,8 +39,6 @@ void add_path_trace (threadpool curlpool, threadpool tracepool,
 	 * which leads to some badness (null pointers etc).
 	 */
 	job = malloc(sizeof (struct PathBuild));
-//	strncpy(job->local_addr, asc.local_addr, strlen(asc.local_addr));
-//	strncpy(job->rem_addr, asc.rem_addr, strlen(asc.rem_addr));
 	job->local_addr = strndup(asc.local_addr, strlen(asc.local_addr));
 	job->rem_addr = strndup(asc.rem_addr, strlen(asc.rem_addr));
 	job->group = strndup(flow->group, strlen(flow->group)); 
@@ -78,16 +76,17 @@ void threaded_path_trace (struct PathBuild *job) {
 	struct addrinfo hint;
 	struct ThreadWrite *influxjob;
 	influxConn *curl_conn;
-	char results[32][45]; /* hops are limited to 30 but start at 1 */
-	char flowid_char[40];
-	char *tag_str;
-	char *temp_str;
-	char *influx_data;
+	int MAX_LINE_SZ_PATH = 16384;
 	int ttl = 0;
 	int i;
 	int ret = -1;
 	int size = 0;
 	int total_size = 0;
+	char results[32][45]; /* hops are limited to 30 but start at 1 */
+	char flowid_char[40];
+	char *tag_str;
+	char *temp_str;
+	char influx_data[MAX_LINE_SZ_PATH];
 
 	memset(results, '\0', 32*45); /*initialize the results array to null */
 
@@ -161,20 +160,25 @@ void threaded_path_trace (struct PathBuild *job) {
 	
 	/* init the final command string for influx*/
 	/* this is freed in the threaded_influx_write function*/
-	influx_data = malloc(4);
-	*influx_data = '\0';
+	//influx_data = malloc(4);
+	//*influx_data = '\0';
 
 	/* iterate through each entry in the results array and craft an
 	 * influx happy string */
 	for (i = 1; i <= ttl; i++) {
+		//size = strlen ("path,hop= value=\"\"\n") + strlen(tag_str) + strlen(results[i]) + 3;
+		//printf ("size1: %d\n", size);
 		size = snprintf(NULL, 0, "path%s,hop=%d value=\"%s\"\n", tag_str, i, results[i]) + 1;
+		//printf ("size2: %d\n", size);
 		total_size += size;
 		temp_str = malloc(size);
 		snprintf(temp_str, size, "path%s,hop=%d value=\"%s\"\n", tag_str, i, results[i]);
 		temp_str[size-1] = '\0';
-		influx_data = realloc(influx_data, total_size);
-		strncat(influx_data, temp_str, size);
-		influx_data[total_size-1] = '\0';
+		//influx_data = realloc(influx_data, total_size);
+		if (total_size < MAX_LINE_SZ_PATH) {
+			strncat(influx_data, temp_str, size);
+			influx_data[total_size-1] = '\0';
+		}
 		free(temp_str);
 	}
 
@@ -183,6 +187,7 @@ void threaded_path_trace (struct PathBuild *job) {
 	snprintf(influxjob->action, 32, "Added Path: %d", job->cid);
 	influxjob->conn = job->influx_conn;
 	influxjob->data = &influx_data[0];
+	printf ("%s\n", influx_data); 
 	/* add this to the curl thread pool */
 	thpool_add_work(job->mythread, (void*)threaded_influx_write, (void*)influxjob);
 
@@ -331,10 +336,11 @@ Cleanup:
 
 void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl_client *cl, int cid, char *time_marker) {
 
+	int MAX_LINE_SZ_TIME = 4096;
 	struct ThreadWrite *job;
 	uint64_t timestamp = 0;
 	char flowid_char[40];
-	char *influx_data;
+	char influx_data[MAX_LINE_SZ_TIME];
 	int length;
 
 	uuid_unparse(flow->flowid, flowid_char);
@@ -390,22 +396,27 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 	}
 	
 	/*create the tag string*/
-	length = snprintf(NULL, 0, "%s,type=flowdata,group=%s,domain=%s,dtn=%s,flow=%s value=%"PRIu64"\n", 
-			  time_marker, flow->group, flow->domain_name, 
-			  options.dtn_id, flowid_char, timestamp);
+	length = strlen(",type=flowdata,group=,domain=,dtn=,flow= value=") 
+		+ strlen(time_marker) + strlen(flow->group) + strlen(flow->domain_name)
+		+ strlen(options.dtn_id) + strlen(flowid_char) + 18;
+
+//	length = snprintf(NULL, 0, "%s,type=flowdata,group=%s,domain=%s,dtn=%s,flow=%s value=%"PRIu64"\n", 
+//			  time_marker, flow->group, flow->domain_name, 
+//			  options.dtn_id, flowid_char, timestamp);
 	length++;
-	influx_data = malloc(length + 1);
-	snprintf(influx_data, length, "%s,type=flowdata,group=%s,domain=%s,dtn=%s,flow=%s value=%"PRIu64"\n", 
-			  time_marker, flow->group, flow->domain_name, 
-			  options.dtn_id, flowid_char, timestamp);
-	influx_data[length - 1] = '\0';
-	
-	job = malloc(sizeof(struct ThreadWrite));
-	snprintf(job->action, 32, "Added Time: %d", flow->cid);
-	job->conn = flow->conn;
-	job->data = &influx_data[0];
-	thpool_add_work(curlpool, (void*)threaded_influx_write, (void*)job);
-	/* NB: job and influx data are free'd in threaded_influx_write */
+//	influx_data = malloc(length + 1);
+	if (length < MAX_LINE_SZ_TIME) {
+		snprintf(influx_data, length, "%s,type=flowdata,group=%s,domain=%s,dtn=%s,flow=%s value=%"PRIu64"\n", 
+			 time_marker, flow->group, flow->domain_name, 
+			 options.dtn_id, flowid_char, timestamp);
+		influx_data[length - 1] = '\0';
+		job = malloc(sizeof(struct ThreadWrite));
+		snprintf(job->action, 32, "Added Time: %d", flow->cid);
+		job->conn = flow->conn;
+		job->data = &influx_data[0];
+		thpool_add_work(curlpool, (void*)threaded_influx_write, (void*)job);
+		/* NB: job and influx data are free'd in threaded_influx_write */
+	}
 End:; /*this is in case the curl handle doesn't exist*/
 }
 
@@ -416,11 +427,12 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 	struct ThreadWrite *job;
 	char flowid_char[40];
 	char *tag_str;
-	char *influx_data;
 	char estats_val[128];
 	int total_size = 0;
 	int i, length;
 	uint64_t timestamp = 0;
+	int MAX_LINE_SIZE = 24576; /* largest I've seen is < 16k */
+	char influx_data[MAX_LINE_SIZE];
 
 	full_mask.masks[0] = DEFAULT_PERF_MASK;
         full_mask.masks[1] = DEFAULT_PATH_MASK;
@@ -450,8 +462,8 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 	/* between flow and and esdata we have all of the information we need */
 
 	/*create the tag string*/
-	length = snprintf(NULL, 0, ",type=metrics,group=%s,domain=%s,dtn=%s,flow=%s", 
-			  flow->group, flow->domain_name, options.dtn_id, flowid_char);
+	length = strlen(",type=metrics,group=,domain=,dtn=,flow=") + strlen(flow->group)
+		+ strlen(flow->domain_name) + strlen(options.dtn_id) + strlen(flowid_char);
 	length++;
 	tag_str = malloc(length * sizeof(char));
 	snprintf(tag_str, length, ",type=metrics,group=%s,domain=%s,dtn=%s,flow=%s", 
@@ -459,8 +471,9 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 	tag_str[length - 1] = '\0';
 
 	/* init the final command string for influx*/
-	influx_data = malloc(1);
-	*influx_data = '\0';
+	//influx_data = malloc(1);
+	//*influx_data = '\0';
+	//memset(influx_data, '\0', MAX_LINE_SIZE);
 
 	/* we're using the current polling period. 
 	 * This gives us 1 second resolution which isn't awesome but it allows
@@ -495,7 +508,8 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 		
 		
 		/* get the size of the new line */
-		size = snprintf(NULL, 0, "%s%s%s%"PRIu64"\n", estats_var_array[i].name, tag_str, estats_val, timestamp) + 1;
+		/* 18 is the length of the timestamp +1 for null and +1 for the eol*/
+		size = strlen(estats_var_array[i].name) + strlen(tag_str) + strlen(estats_val) + 18; 
 
 		/* keep a running total of the sizes */
 		total_size += size;
@@ -506,9 +520,11 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 		temp_str[size - 1] = '\0';
 
 		/* add it to what we will be sending influx*/
-		influx_data = realloc(influx_data, total_size);
-		strncat(influx_data, temp_str, size);
-		influx_data[total_size - 1] = '\0';
+		if (total_size < MAX_LINE_SIZE) { 
+			/* what we are writing fits in the buffer */
+			strncat(influx_data, temp_str, size);
+			influx_data[total_size - 1] = '\0';
+		}
 		free(temp_str);
 	}
 
@@ -517,7 +533,7 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 	job->conn = flow->conn;
 	job->data = &influx_data[0];
 	thpool_add_work(curlpool, (void*)threaded_influx_write, (void*)job);
-	/* NB: job and influx data are free'd in threaded_influx_write */
+	/* NB: job is free'd in threaded_influx_write */
 	free(tag_str); 
 Cleanup:
 	estats_val_data_free(&esdata);
@@ -541,6 +557,6 @@ void threaded_influx_write (struct ThreadWrite *job) {
 	 	log_debug("%s", job->action);
 	}
 	log_debug2("%s", job->data);
-	free(job->data);
+	//free(job->data);
 	free(job);
 }
