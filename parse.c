@@ -194,8 +194,9 @@ Cleanup:
 int exclude_app (char* appname, char** apps, int index) {
 	int i;
 	for (i = 0; i < index; i++) {
-		if (strcmp(appname, apps[i]) == 0)
+		if (strcmp(appname, apps[i]) == 0) {
 			return 1;
+		}
 	}
 	return 0;
 }

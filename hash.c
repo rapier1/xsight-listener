@@ -27,18 +27,18 @@ void hash_add_network(struct NetworksHash *n, int network_id) {
 	HASH_ADD_INT(networks, network_id, n);
 }
 
-/* find the curl handle associated with the group name 
+/* find the curl handle associated with the netname 
  * return a pointer to the influxConn struct. 
  * I should have been able to do with with hash_find_str but
  * it failed to match any of the strings. 
  * This works and is likley no more expensive
  */
-influxConn *hash_find_curl_handle(const char *group) {
+influxConn *hash_find_curl_handle(const char *netname) {
 	struct NetworksHash *current, *temp;
-	if (!group || group == NULL) 
+	if (!netname || netname == NULL) 
 		return NULL;
 	HASH_ITER(hh, networks, current, temp) {
-		if (strcmp(current->group, group) == 0) {
+		if (strcmp(current->netname, netname) == 0) {
 		        break;
 		}
 	}
@@ -70,7 +70,7 @@ int hash_get_curl_handles () {
 
 		mycurl = create_conn ((char *)current->influx_host_url, (char *)current->influx_database, 
 				      (char *)current->influx_user, (char *)current->influx_password);
-		log_debug ("Created connection for %s to %s: %p", current->group, current->influx_host_url, mycurl);
+		log_debug ("Created connection for %s to %s: %p", current->netname, current->influx_host_url, mycurl);
 
 		current->conn = mycurl; /*current->conn needs *some* value before leaving this function*/
 		if (mycurl == NULL) {
@@ -97,7 +97,7 @@ struct ConnectionHash *hash_add_connection (struct estats_connection_info *conn)
 	flow->seen = 1;
 	flow->lastpoll = time(NULL);
 	HASH_ADD_INT(activeflows, cid, flow);
-	log_debug("Added hash: %d", flow->cid);
+	log_debug("Added hash: %d", flow->cid, conn->cmdline);
 	return flow;
 }
 
@@ -120,7 +120,7 @@ int hash_get_tags(struct estats_connection_tuple_ascii *asc, struct ConnectionHa
 								  current->net_addrs, 
 								  current->net_addrs_count))) {
 
-			flow->group = strndup(current->group, strlen(current->group));
+			flow->netname = strndup(current->netname, strlen(current->netname));
 			flow->domain_name = strndup(current->domain_name, strlen(current->domain_name));
 			return 1;
 		}
@@ -136,8 +136,9 @@ int hash_delete_flow (int cid) {
 	if (current != NULL) {
 		log_debug("Deleting flow: %d", current->cid);
 		HASH_DEL(activeflows, current);
-		free((void *)(current->group));
-		free((void *)(current->domain_name));
+		free((void *)current->netname);
+		free((void *)current->domain_name);
+		free((void *)current->flowid_char);
 		free(current);
 		return 1;
 	}
@@ -150,13 +151,14 @@ void hash_clear_hash () {
 	int i;
 	HASH_ITER(hh, activeflows, curconn, tempconn) {
 		HASH_DEL(activeflows, curconn);
-		free((void *)curconn->group);
+		free((void *)curconn->netname);
 		free((void *)curconn->domain_name);
+		free((void *)curconn->flowid_char);
 		free(curconn);
 	}
 	HASH_ITER(hh, networks, curnet, tempnet) {
 		HASH_DEL(networks, curnet);
-		free((void *)curnet->group);
+		free((void *)curnet->netname);
 		free((void *)curnet->domain_name);
 		free((void *)curnet->influx_host_url);
 		free((void *)curnet->influx_database);

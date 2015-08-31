@@ -118,7 +118,10 @@ CURLcode influxQuery(influxConn *conn, char *query){
 CURLcode influxWrite(influxConn *conn, char *data){
     char *url = build_write_url(conn); //freed in sendPost()
 
-    if(debug){printf("[w: %s]\n", url);}
+    if(debug){
+	    printf("[write: %s]\n", url);
+	    printf("[data: %s]\n", data);
+    }
 
     sendPost(conn, url, data);
     return conn->resCode; 
@@ -131,14 +134,13 @@ CURLcode influxWrite(influxConn *conn, char *data){
  */
 CURLcode sendPost(influxConn *conn, char *url, char *data){
     if(conn->curl){
-        curl_easy_setopt(conn->curl, CURLOPT_URL, url);
-        curl_easy_setopt(conn->curl, CURLOPT_POSTFIELDSIZE, (long)strlen(data));
-        curl_easy_setopt(conn->curl, CURLOPT_POSTFIELDS, data);
-	curl_easy_setopt(conn->curl, CURLOPT_CONNECT_ONLY, 1L); 	
-	curl_easy_setopt(conn->curl, CURLOPT_TCP_KEEPALIVE, 1L);
-	curl_easy_setopt(conn->curl, CURLOPT_TCP_KEEPIDLE, 30L);
-	curl_easy_setopt(conn->curl, CURLOPT_TCP_KEEPINTVL, 10L);
-        conn->resCode = curl_easy_perform(conn->curl);
+	    curl_easy_setopt(conn->curl, CURLOPT_URL, url);
+	    curl_easy_setopt(conn->curl, CURLOPT_POSTFIELDSIZE, (long)strlen(data));
+	    curl_easy_setopt(conn->curl, CURLOPT_POSTFIELDS, data);
+	    curl_easy_setopt(conn->curl, CURLOPT_TCP_KEEPALIVE, 1L);
+	    curl_easy_setopt(conn->curl, CURLOPT_TCP_KEEPIDLE, 30L);
+	    curl_easy_setopt(conn->curl, CURLOPT_TCP_KEEPINTVL, 10L);
+	    conn->resCode = curl_easy_perform(conn->curl);
     }
     free(url);
     return conn->resCode;

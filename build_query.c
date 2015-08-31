@@ -39,13 +39,11 @@ void add_path_trace (threadpool curlpool, threadpool tracepool,
 	 * which leads to some badness (null pointers etc).
 	 */
 	job = malloc(sizeof (struct PathBuild));
-//	strncpy(job->local_addr, asc.local_addr, strlen(asc.local_addr));
-//	strncpy(job->rem_addr, asc.rem_addr, strlen(asc.rem_addr));
 	job->local_addr = strndup(asc.local_addr, strlen(asc.local_addr));
 	job->rem_addr = strndup(asc.rem_addr, strlen(asc.rem_addr));
-	job->group = strndup(flow->group, strlen(flow->group)); 
+	job->netname = strndup(flow->netname, strlen(flow->netname)); 
 	job->domain_name = strndup(flow->domain_name, strlen(flow->domain_name));
-	uuid_copy(job->flowid, flow->flowid);
+	job->flowid_char = strndup(flow->flowid_char, strlen(flow->flowid_char));
 	job->cid = flow->cid;
 	job->influx_conn = flow->conn;
 	job->mythread = curlpool;
@@ -55,10 +53,10 @@ void add_path_trace (threadpool curlpool, threadpool tracepool,
 	
 Cleanup:
 	if (err != NULL) {
-		char flowid_char[40];
-		uuid_unparse(flow->flowid, flowid_char);
+		//char flowid_char[40];
+		//uuid_unparse(flow->flowid, flowid_char);
 		log_error("%s:\t%s\t%s tuple to ascii conversion error in add_flow_influx", 
-			  flowid_char, estats_error_get_extra(err), 
+			  flow->flowid_char, estats_error_get_extra(err), 
 			  estats_error_get_message(err));
 		estats_error_free(&err);
 	}
@@ -79,10 +77,10 @@ void threaded_path_trace (struct PathBuild *job) {
 	struct ThreadWrite *influxjob;
 	influxConn *curl_conn;
 	char results[32][45]; /* hops are limited to 30 but start at 1 */
-	char flowid_char[40];
 	char *tag_str;
 	char *temp_str;
 	char *influx_data;
+	int MAX_LINE_SZ_PATH = 16384; /*max size of influx_data*/
 	int ttl = 0;
 	int i;
 	int ret = -1;
@@ -92,10 +90,10 @@ void threaded_path_trace (struct PathBuild *job) {
 	memset(results, '\0', 32*45); /*initialize the results array to null */
 
 	/* get the curl handle. Do this now so we don't waste time if the handle is null*/
-	curl_conn = hash_find_curl_handle(job->group);
+	curl_conn = hash_find_curl_handle(job->netname);
 	if (curl_conn == NULL) {
-		log_error("Can't add flow data. There is no existing curl connection to the data base for group %s\n", 
-			  job->group);
+		log_error("Can't add flow data. There is no existing curl connection to the data base for netname %s\n", 
+			  job->netname);
 		goto Cleanup;
 	}
 
@@ -146,51 +144,53 @@ void threaded_path_trace (struct PathBuild *job) {
 	}
 
 	/*create the tag string*/
-
-	/* get the uuid in char format */
-	uuid_unparse(job->flowid, flowid_char);
-
 	/* determine the size of the tag string so we can malloc it */
-	size = snprintf(NULL, 0, ",type=flowdata,group=%s,domain=%s,dtn=%s,flow=%s",
-			  job->group, job->domain_name, options.dtn_id, flowid_char);
+	size = strlen(",type=flowdata,netname=,domain=,dtn=,flow=") + strlen(job->netname)
+		+ strlen(job->domain_name) + strlen(options.dtn_id) + strlen(job->flowid_char);
 	size++;
 	tag_str = malloc(size * sizeof(char) + 1);
-	snprintf(tag_str, size, ",type=flowdata,group=%s,domain=%s,dtn=%s,flow=%s",
-		 job->group, job->domain_name, options.dtn_id, flowid_char);
+	snprintf(tag_str, size, ",type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s",
+		 job->netname, job->domain_name, options.dtn_id, job->flowid_char);
 	tag_str[size-1] = '\0';
 	
 	/* init the final command string for influx*/
 	/* this is freed in the threaded_influx_write function*/
-	influx_data = malloc(4);
+	influx_data = malloc(MAX_LINE_SZ_PATH);
 	*influx_data = '\0';
 
 	/* iterate through each entry in the results array and craft an
 	 * influx happy string */
 	for (i = 1; i <= ttl; i++) {
-		size = snprintf(NULL, 0, "path%s,hop=%d value=\"%s\"\n", tag_str, i, results[i]) + 1;
+		size = strlen("path,hop= value=\"\"\n") + strlen(tag_str) + strlen(results[i]) + 3;
 		total_size += size;
 		temp_str = malloc(size);
 		snprintf(temp_str, size, "path%s,hop=%d value=\"%s\"\n", tag_str, i, results[i]);
 		temp_str[size-1] = '\0';
-		influx_data = realloc(influx_data, total_size);
-		strncat(influx_data, temp_str, size);
-		influx_data[total_size-1] = '\0';
+		if (total_size < MAX_LINE_SZ_PATH) {
+			strncat(influx_data, temp_str, size);
+			influx_data[total_size-1] = '\0';
+		}
 		free(temp_str);
 	}
 
 	/* create the job struct for the curl write. This is freed in that function*/
 	influxjob = malloc(sizeof(struct ThreadWrite));
+	influxjob->action = malloc(32);
 	snprintf(influxjob->action, 32, "Added Path: %d", job->cid);
 	influxjob->conn = job->influx_conn;
-	influxjob->data = &influx_data[0];
+	//influxjob->data = &influx_data[0];
+	influxjob->data = strndup(influx_data, strlen(influx_data));
+	free(influx_data);
+
 	/* add this to the curl thread pool */
 	thpool_add_work(job->mythread, (void*)threaded_influx_write, (void*)influxjob);
 
 	free(tag_str);
-	free((void *)(job->local_addr));
-	free((void *)(job->rem_addr));
-	free((void *)(job->group));
-	free((void *)(job->domain_name));
+	free((void *)job->local_addr);
+	free((void *)job->rem_addr);
+	free((void *)job->netname);
+	free((void *)job->domain_name);
+	free((void *)job->flowid_char);
  	free(job); 
 	freeaddrinfo(local_address);
 	freeaddrinfo(remote_address);
@@ -204,23 +204,24 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	struct estats_error* err = NULL;
 	struct estats_connection_tuple_ascii asc;
 	struct ThreadWrite *job;
-	char flowid_char[40];
 	char *influx_data;
 	char *temp_str;
 	char *tag_str;
-	int length, size, total_size;
+	int tag_str_len, size, total_size;
+	int MAX_LINE_SZ_FLOW = 16384;
 	size = total_size = 0;
 
 	/* convert the tuples to a string */
 	Chk(estats_connection_tuple_as_strings(&asc, &conn->tuple));
 
 	/* init the final command string for influx*/
-	influx_data = malloc(4);
+	influx_data = malloc(MAX_LINE_SZ_FLOW);
 	*influx_data = '\0';
 
 	/* create the flowid */
 	uuid_generate(flow->flowid);
-	uuid_unparse(flow->flowid, flowid_char);
+	flow->flowid_char = malloc(37); /* length of uuid + null */
+	uuid_unparse(flow->flowid, (char *)flow->flowid_char);
 
 	/* match the IP to appropriate network from the config file */
 	if (!hash_get_tags(&asc, flow)) {
@@ -235,76 +236,86 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	 */
 
 	/* get the curl handle. Do this now so we don't waste time if the handle is null*/
-	flow->conn = hash_find_curl_handle(flow->group);
+	flow->conn = hash_find_curl_handle(flow->netname);
 	if (flow->conn == NULL) {
-		log_error("Can't add flow data. There is no existing curl connection to the data base for group %s\n", flow->group);
+		log_error("Can't add flow data. There is no existing curl connection to the data base for netname %s\n", 
+			  flow->netname);
 		goto Cleanup;
 	}
 	
 	/*create the tag string*/
-	length = snprintf(NULL, 0, ",type=flowdata,group=%s,domain=%s,dtn=%s,flow=%s value=", 
-			  flow->group, flow->domain_name, options.dtn_id, flowid_char);
-	length++;
-	tag_str = malloc(length * sizeof(char) + 1);
-	snprintf(tag_str, length, ",type=flowdata,group=%s,domain=%s,dtn=%s,flow=%s value=", 
-		 flow->group, flow->domain_name, options.dtn_id, flowid_char);
-	tag_str[length-1] = '\0';
+	
+	tag_str_len = strlen(",type=flowdata,netname=,domain=,dtn=,flow= value=")
+		+ strlen (flow->netname) + strlen (flow->domain_name) 
+		+ strlen(options.dtn_id) + strlen (flow->flowid_char) + 1;
+	//length = snprintf(NULL, 0, ",type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=", 
+	//		  flow->netname, flow->domain_name, options.dtn_id, flowid_char);
+	//length++;
+	tag_str = malloc(tag_str_len * sizeof(char) + 1);
+	snprintf(tag_str, tag_str_len, ",type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=", 
+		 flow->netname, flow->domain_name, options.dtn_id, flow->flowid_char);
+	tag_str[tag_str_len-1] = '\0';
 	
 	/* add the src_ip */
-	size = snprintf(NULL, 0, "src_ip%s\"%s\"\n", tag_str, asc.local_addr) + 1;
+	size = strlen("src_ip\"\"\n") + tag_str_len +strlen(asc.local_addr) + 1; 
 	total_size += size;
 	temp_str = malloc(size);
 	snprintf(temp_str, size, "src_ip%s\"%s\"\n", tag_str, asc.local_addr);
 	temp_str[size-1] = '\0';
-	influx_data = realloc(influx_data, total_size);
-	strncat(influx_data, temp_str, size);
-	influx_data[total_size-1] = '\0';
+	if (total_size < MAX_LINE_SZ_FLOW) {
+		strncat(influx_data, temp_str, size);
+		influx_data[total_size-1] = '\0';
+	}
 	free(temp_str);
 
 	/* add the dest_ip */
-	size = snprintf(NULL, 0, "dest_ip%s\"%s\"\n", tag_str, asc.rem_addr) + 1;
+	size = strlen("dest_ip\"\"\n") + tag_str_len +strlen(asc.rem_addr) + 1; 
 	total_size += size;
 	temp_str = malloc(size + 1);
 	snprintf(temp_str, size, "dest_ip%s\"%s\"\n", tag_str, asc.rem_addr);
 	temp_str[size-1] = '\0';
-	influx_data = realloc(influx_data, total_size + 1);
-	strncat(influx_data, temp_str, size);
-	influx_data[total_size-1] = '\0';
+	if (total_size < MAX_LINE_SZ_FLOW) {
+		strncat(influx_data, temp_str, size);
+		influx_data[total_size-1] = '\0';
+	}
 	free(temp_str);
 
 
 	/* add the src_port */
-	size = snprintf(NULL, 0, "src_port%s%s\n", tag_str, asc.local_port) + 1;
+	size = strlen("src_port\"\"\n") + tag_str_len +strlen(asc.local_port) + 1; 
 	total_size += size;
 	temp_str = malloc(size + 1);
 	snprintf(temp_str, size, "src_port%s%s\n", tag_str, asc.local_port);
 	temp_str[size-1] = '\0';
-	influx_data = realloc(influx_data, total_size + 1);
-	strncat(influx_data, temp_str, size);
-	influx_data[total_size-1] = '\0';
+	if (total_size < MAX_LINE_SZ_FLOW) {
+		strncat(influx_data, temp_str, size);
+		influx_data[total_size-1] = '\0';
+	}
 	free(temp_str);
 
 	/* add the dest_port */
-	size = snprintf(NULL, 0, "dest_port%s%s\n", tag_str, asc.rem_port) + 1;
+	size = strlen("dest_port\"\"\n") + tag_str_len +strlen(asc.rem_addr) + 1; 
 	total_size += size;
 	temp_str = malloc(size + 1);
 	snprintf(temp_str, size, "dest_port%s%s\n", tag_str, asc.rem_port);
 	temp_str[size-1] = '\0';
-	influx_data = realloc(influx_data, total_size + 1);
-	strncat(influx_data, temp_str, size);
-	influx_data[total_size-1] = '\0';
+	if (total_size < MAX_LINE_SZ_FLOW) {
+		strncat(influx_data, temp_str, size);
+		influx_data[total_size-1] = '\0';
+	}
 	free(temp_str);
 
 
 	/* add the command */
-	size = snprintf(NULL, 0, "command%s\"%s\"\n", tag_str, conn->cmdline) + 1;
+	size = strlen("command\"\"\n") + tag_str_len +strlen(conn->cmdline) + 1; 
 	total_size += size;
 	temp_str = malloc(size + 1);
 	temp_str[size-1] = '\0';
 	snprintf(temp_str, size, "command%s\"%s\"\n", tag_str, conn->cmdline);
-	influx_data = realloc(influx_data, total_size + 1);
-	strncat(influx_data, temp_str, size);
-	influx_data[total_size-1] = '\0';
+	if (total_size < MAX_LINE_SZ_FLOW) {
+		strncat(influx_data, temp_str, size);
+		influx_data[total_size-1] = '\0';
+	}
 	free(temp_str);
 
 	/* note, we'll set the start time when we make the initial instrument read */
@@ -314,16 +325,19 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	 */
 
 	job = malloc(sizeof(struct ThreadWrite));
+	job->action = malloc(32);
 	snprintf(job->action, 32, "Added Flow: %d", conn->cid);
 	job->conn = flow->conn;
-	job->data = &influx_data[0];
+//	job->data = &influx_data[0];
+	job->data = strndup(influx_data, strlen(influx_data));
+	free(influx_data);
 	thpool_add_work(curlpool, (void*)threaded_influx_write, (void*)job);
 	/* NB: job and influx data are free'd in threaded_influx_write */
 	free(tag_str);
 Cleanup:
 	if (err != NULL) {
 		log_error("%s:\t%s\t%s tuple to ascii conversion error in add_flow_influx", 
-			  flowid_char, estats_error_get_extra(err), 
+			  flow->flowid_char, estats_error_get_extra(err), 
 			  estats_error_get_message(err));
 		estats_error_free(&err);
 	}
@@ -333,16 +347,12 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 
 	struct ThreadWrite *job;
 	uint64_t timestamp = 0;
-	char flowid_char[40];
 	char *influx_data;
 	int length;
 
-	uuid_unparse(flow->flowid, flowid_char);
-
 	/* get the curl handle. Do this now so we don't waste time if the handle is null*/
-        //	curl_handle = hash_find_curl_handle(flow->group);
 	if (flow->conn == NULL) {
-		log_error("Can't add time stamp. There is no existing curl connection to the data base for group %s\n", flow->group);
+		log_error("Can't add time stamp. There is no existing curl connection to the data base for netname %s\n", flow->netname);
 		goto End;
 	}
 
@@ -377,7 +387,7 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 	Cleanup:
 		estats_val_data_free(&esdata);
 		if (err != NULL) {
-			log_error("%s:\t%s\t%s", flowid_char, 
+			log_error("%s:\t%s\t%s", flow->flowid_char, 
 				  estats_error_get_extra(err), 
 				  estats_error_get_message(err));
 			estats_error_free(&err);
@@ -390,20 +400,23 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 	}
 	
 	/*create the tag string*/
-	length = snprintf(NULL, 0, "%s,type=flowdata,group=%s,domain=%s,dtn=%s,flow=%s value=%"PRIu64"\n", 
-			  time_marker, flow->group, flow->domain_name, 
-			  options.dtn_id, flowid_char, timestamp);
-	length++;
-	influx_data = malloc(length + 1);
-	snprintf(influx_data, length, "%s,type=flowdata,group=%s,domain=%s,dtn=%s,flow=%s value=%"PRIu64"\n", 
-			  time_marker, flow->group, flow->domain_name, 
-			  options.dtn_id, flowid_char, timestamp);
+	length = strlen (",type=flowdata,netname=,domain=,dtn=,flow= value=") 
+		+ strlen(time_marker) + strlen (flow->netname) + strlen(flow->domain_name)
+		+ strlen(options.dtn_id) + strlen(flow->flowid_char) + 18; 
+	/* why 18? 16 for the timestamp, 1 for the eol, 1 for the null */
+	influx_data = malloc(length);
+	snprintf(influx_data, length, "%s,type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=%"PRIu64"\n", 
+			  time_marker, flow->netname, flow->domain_name, 
+			  options.dtn_id, flow->flowid_char, timestamp);
 	influx_data[length - 1] = '\0';
 	
 	job = malloc(sizeof(struct ThreadWrite));
+	job->action = malloc(32);
 	snprintf(job->action, 32, "Added Time: %d", flow->cid);
 	job->conn = flow->conn;
-	job->data = &influx_data[0];
+	job->data = strndup(influx_data, strlen(influx_data));
+	free(influx_data);
+//	job->data = &influx_data[0];
 	thpool_add_work(curlpool, (void*)threaded_influx_write, (void*)job);
 	/* NB: job and influx data are free'd in threaded_influx_write */
 End:; /*this is in case the curl handle doesn't exist*/
@@ -414,13 +427,14 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 	struct estats_mask full_mask;
 	struct estats_val_data* esdata = NULL;
 	struct ThreadWrite *job;
-	char flowid_char[40];
 	char *tag_str;
 	char *influx_data;
 	char estats_val[128];
 	int total_size = 0;
-	int i, length;
+	int i, tag_str_len;
 	uint64_t timestamp = 0;
+	/* maximum observed size has been under 16k but lets be extra safe */
+	int MAX_LINE_SZ_METRIC = 24576;
 
 	full_mask.masks[0] = DEFAULT_PERF_MASK;
         full_mask.masks[1] = DEFAULT_PATH_MASK;
@@ -434,12 +448,9 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
                 full_mask.if_mask[i] = 1;
         }
 
-	/* process the uuid */
-	uuid_unparse(flow->flowid, flowid_char);
-
 	/* check the curl handle. Do this now so we don't waste time if the handle is null*/
 	if (flow->conn == NULL) {
-		log_error("Can't add metrics. There is no existing curl connection to the data base for group %s\n", flow->group);
+		log_error("Can't add metrics. There is no existing curl connection to the data base for netname %s\n", flow->netname);
 		goto End;
 	}
 
@@ -450,16 +461,17 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 	/* between flow and and esdata we have all of the information we need */
 
 	/*create the tag string*/
-	length = snprintf(NULL, 0, ",type=metrics,group=%s,domain=%s,dtn=%s,flow=%s", 
-			  flow->group, flow->domain_name, options.dtn_id, flowid_char);
-	length++;
-	tag_str = malloc(length * sizeof(char));
-	snprintf(tag_str, length, ",type=metrics,group=%s,domain=%s,dtn=%s,flow=%s", 
-		 flow->group, flow->domain_name, options.dtn_id, flowid_char);
-	tag_str[length - 1] = '\0';
+	tag_str_len = strlen( ",type=metrics,netname=,domain=,dtn=,flow=") 
+		+ strlen(flow->netname) + strlen (flow->domain_name) 
+		+ strlen(options.dtn_id) + strlen (flow->flowid_char) + 1;
+
+	tag_str = malloc(tag_str_len);
+	snprintf(tag_str, tag_str_len, ",type=metrics,netname=%s,domain=%s,dtn=%s,flow=%s", 
+		 flow->netname, flow->domain_name, options.dtn_id, flow->flowid_char);
+	tag_str[tag_str_len - 1] = '\0';
 
 	/* init the final command string for influx*/
-	influx_data = malloc(1);
+	influx_data = malloc(MAX_LINE_SZ_METRIC);
 	*influx_data = '\0';
 
 	/* we're using the current polling period. 
@@ -491,11 +503,11 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 			break;
 		default:
 			break;
-		} //end switch
+		} /*end switch*/
 		
 		
 		/* get the size of the new line */
-		size = snprintf(NULL, 0, "%s%s%s%"PRIu64"\n", estats_var_array[i].name, tag_str, estats_val, timestamp) + 1;
+		size = strlen(estats_var_array[i].name) + strlen(estats_val) + tag_str_len + 18;
 
 		/* keep a running total of the sizes */
 		total_size += size;
@@ -506,23 +518,27 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 		temp_str[size - 1] = '\0';
 
 		/* add it to what we will be sending influx*/
-		influx_data = realloc(influx_data, total_size);
-		strncat(influx_data, temp_str, size);
-		influx_data[total_size - 1] = '\0';
+		if (total_size < MAX_LINE_SZ_METRIC) {
+			strncat(influx_data, temp_str, size);
+			influx_data[total_size - 1] = '\0';
+		}
 		free(temp_str);
 	}
 
 	job = malloc(sizeof(struct ThreadWrite));
+	job->action = malloc(32);
 	snprintf(job->action, 32, "Added Metrics: %d", flow->cid);
 	job->conn = flow->conn;
-	job->data = &influx_data[0];
+//	job->data = malloc(strlen(influx_data));
+	job->data = strndup(influx_data, strlen(influx_data));
+	free(influx_data);
 	thpool_add_work(curlpool, (void*)threaded_influx_write, (void*)job);
 	/* NB: job and influx data are free'd in threaded_influx_write */
 	free(tag_str); 
 Cleanup:
 	estats_val_data_free(&esdata);
 	if (err != NULL) {
-		log_error("%s:\t%s\t%s", flowid_char, 
+		log_error("%s:\t%s\t%s", flow->flowid_char, 
 			  estats_error_get_extra(err), 
 			  estats_error_get_message(err));
 		estats_error_free(&err);
@@ -535,12 +551,26 @@ End: ; /*in case there is no curl handle*/
 /* context of the caller */
 void threaded_influx_write (struct ThreadWrite *job) {
 	CURLcode curl_res;
-	if ((curl_res = influxWrite(job->conn, job->data) != CURLE_OK)) {
+	influxConn *mycurl = NULL;
+
+//	mycurl = create_conn ((char *)job->conn->host_url, (char *)job->conn->db, 
+	//                                    (char *)job->conn->user, (char *)job->conn->pass);        
+
+//	if ((curl_res = influxWrite(job->conn, job->data) != CURLE_OK)) {
+	if ((curl_res = influxWrite(mycurl, job->data) != CURLE_OK)) {
 		log_error("CURL failure: %s for %s", curl_easy_strerror(curl_res), job->action);
 	} else {
 	 	log_debug("%s", job->action);
 	}
+
 	log_debug2("%s", job->data);
+//	rest_cleanup(mycurl);
+//	free((void *)mycurl->host_url);
+//	free((void *)mycurl->db);
+//	free((void *)mycurl->user);
+//	free((void *)mycurl->pass);
+//	free(mycurl);
 	free(job->data);
+	free(job->action);
 	free(job);
 }

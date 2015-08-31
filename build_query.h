@@ -28,18 +28,18 @@
 #include "tracer.h"
 
 struct ThreadWrite {
-	char action[32];
+	char *action;
 	influxConn *conn;
 	char *data;
 } ThreadWrite;
 
 struct PathBuild {
 	struct estats_connection_info *conn;
-	const char *group;
+	const char *netname;
 	const char *domain_name;
 	char *local_addr;
 	char *rem_addr;
-	uuid_t flowid;
+	const char *flowid_char;
 	int cid;
 	influxConn *influx_conn;
 	threadpool mythread;

@@ -263,6 +263,18 @@ int main(int argc, char *argv[]) {
 			temphash->seen = 0;
 		}
 		estats_list_for_each(&clist->connection_info_head, ci, list) {
+			/* if the cmdline is empty then the connection is dead so skip it */
+			/* technically the cmd line would be empty because the cid can't find
+			 * a corresponding entry in the pid table. Thsi may fail in some 
+			 * cirucmstances so a better way to handle this might be useful
+			 */
+			if (strlen(ci->cmdline) == 0) {
+				continue;
+			}
+			/* filter incoming connections based on option rule sets */
+			if (filter_connection(ci) == 1) {
+				continue;
+			}
 			/* check to see if the CID is already in our hash of active connections*/
 			temphash = NULL;
 			temphash = hash_find_cid(ci->cid);
@@ -270,10 +282,6 @@ int main(int argc, char *argv[]) {
 				/* if it is then set the seen flag to 1 */
 				temphash->seen = 1;
 			} else {
-				/* filter incoming connections based on option rule sets */
-				if (filter_connection(ci) == 1) {
-					continue;
-				}
 				/* if it is not then add the connection to our hash */
 				temphash = hash_add_connection(ci);
 				temphash->closed = 0;
@@ -287,7 +295,6 @@ int main(int argc, char *argv[]) {
 		HASH_ITER(hh, activeflows, temphash, vtemphash) {
 			/* delete stale flows from the hash */
 			if (temphash->seen == 0) {
-				log_debug("Deleting flow: %d", temphash->cid);
 				if (hash_delete_flow(temphash->cid) != 1) {
 					log_error("Error deleting flow %d from table.", temphash->cid);
 				}
@@ -337,10 +344,6 @@ int main(int argc, char *argv[]) {
  Cleanup:
 	estats_nl_client_destroy(&cl);
 
-	/* destroy the threadpools*/
-	thpool_destroy(curlpool);
-	thpool_destroy(tracepool);
-
 	/* close the rest connection*/
 	hash_close_curl_handles();
 
@@ -351,6 +354,10 @@ int main(int argc, char *argv[]) {
 	options_freeoptions();
 	
 	curl_global_cleanup();
+
+	/* destroy the threadpools*/
+	thpool_destroy(curlpool);
+	thpool_destroy(tracepool);
 
 	if (err != NULL) {
 		PRINT_AND_FREE(err);
