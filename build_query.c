@@ -53,8 +53,6 @@ void add_path_trace (threadpool curlpool, threadpool tracepool,
 	
 Cleanup:
 	if (err != NULL) {
-		//char flowid_char[40];
-		//uuid_unparse(flow->flowid, flowid_char);
 		log_error("%s:\t%s\t%s tuple to ascii conversion error in add_flow_influx", 
 			  flow->flowid_char, estats_error_get_extra(err), 
 			  estats_error_get_message(err));
@@ -178,9 +176,7 @@ void threaded_path_trace (struct PathBuild *job) {
 	influxjob->action = malloc(32);
 	snprintf(influxjob->action, 32, "Added Path: %d", job->cid);
 	influxjob->conn = job->influx_conn;
-	//influxjob->data = &influx_data[0];
-	influxjob->data = strndup(influx_data, strlen(influx_data));
-	free(influx_data);
+	influxjob->data = &influx_data[0];
 
 	/* add this to the curl thread pool */
 	thpool_add_work(job->mythread, (void*)threaded_influx_write, (void*)influxjob);
@@ -328,9 +324,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	job->action = malloc(32);
 	snprintf(job->action, 32, "Added Flow: %d", conn->cid);
 	job->conn = flow->conn;
-//	job->data = &influx_data[0];
-	job->data = strndup(influx_data, strlen(influx_data));
-	free(influx_data);
+	job->data = &influx_data[0];
 	thpool_add_work(curlpool, (void*)threaded_influx_write, (void*)job);
 	/* NB: job and influx data are free'd in threaded_influx_write */
 	free(tag_str);
@@ -414,9 +408,7 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 	job->action = malloc(32);
 	snprintf(job->action, 32, "Added Time: %d", flow->cid);
 	job->conn = flow->conn;
-	job->data = strndup(influx_data, strlen(influx_data));
-	free(influx_data);
-//	job->data = &influx_data[0];
+	job->data = &influx_data[0];
 	thpool_add_work(curlpool, (void*)threaded_influx_write, (void*)job);
 	/* NB: job and influx data are free'd in threaded_influx_write */
 End:; /*this is in case the curl handle doesn't exist*/
@@ -529,9 +521,7 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 	job->action = malloc(32);
 	snprintf(job->action, 32, "Added Metrics: %d", flow->cid);
 	job->conn = flow->conn;
-//	job->data = malloc(strlen(influx_data));
-	job->data = strndup(influx_data, strlen(influx_data));
-	free(influx_data);
+	job->data = &influx_data[0];
 	thpool_add_work(curlpool, (void*)threaded_influx_write, (void*)job);
 	/* NB: job and influx data are free'd in threaded_influx_write */
 	free(tag_str); 
@@ -552,24 +542,25 @@ End: ; /*in case there is no curl handle*/
 void threaded_influx_write (struct ThreadWrite *job) {
 	CURLcode curl_res;
 	influxConn *mycurl = NULL;
-
-//	mycurl = create_conn ((char *)job->conn->host_url, (char *)job->conn->db, 
-	//                                    (char *)job->conn->user, (char *)job->conn->pass);        
-
-//	if ((curl_res = influxWrite(job->conn, job->data) != CURLE_OK)) {
+	
+	mycurl = create_conn ((char *)job->conn->host_url, (char *)job->conn->db, 
+			      (char *)job->conn->user, (char *)job->conn->pass);        
+ 
 	if ((curl_res = influxWrite(mycurl, job->data) != CURLE_OK)) {
+//	if ((curl_res = influxWrite(job->conn, job->data) != CURLE_OK)) {
 		log_error("CURL failure: %s for %s", curl_easy_strerror(curl_res), job->action);
 	} else {
 	 	log_debug("%s", job->action);
 	}
-
+	
+	rest_cleanup(mycurl);
+	free((void *)mycurl->host_url);
+	free((void *)mycurl->db);
+	free((void *)mycurl->user);
+	free((void *)mycurl->pass);
+	free(mycurl);
+	
 	log_debug2("%s", job->data);
-//	rest_cleanup(mycurl);
-//	free((void *)mycurl->host_url);
-//	free((void *)mycurl->db);
-//	free((void *)mycurl->user);
-//	free((void *)mycurl->pass);
-//	free(mycurl);
 	free(job->data);
 	free(job->action);
 	free(job);

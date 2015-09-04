@@ -495,7 +495,8 @@ static struct job* jobqueue_pull(thpool_* thpool_p){
 					bsem_post(thpool_p->jobqueue_p->has_jobs);
 					
 	}
-	
+
+	fprintf(stderr, "Jobs Q: %d\n", thpool_p->jobqueue_p->len);	
 	return job_p;
 }
 

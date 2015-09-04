@@ -226,7 +226,7 @@ int main(int argc, char *argv[]) {
 	 * threaded call or before you call it and pass it in the struct. Either
 	 * way it has to be free'd in the threaded call. 
 	 */
-	curlpool = thpool_init(1);
+	curlpool = thpool_init(4);
 	
 	/* we can use mutliple threads for the path tracing feature */
 	tracepool = thpool_init(4);
