@@ -30,7 +30,8 @@ typedef struct ConnectionHash {
 	int seen;
 	int closed; 
 	uuid_t flowid;
-	const char *group;
+	const char *flowid_char;
+	const char *netname;
 	const char *domain_name;
 	influxConn *conn;
 	UT_hash_handle hh;
@@ -40,7 +41,7 @@ typedef struct NetworksHash {
 	int network_id; /*key*/
 	int net_addrs_count; /* number of networks in net_addrs */
 	int precedence; /* we want to sort the hash so 'interior' is always first */
-	const char *group;
+	const char *netname;
 	const char *domain_name;
 	const char *influx_host_url;
 	const char *influx_database;

@@ -35,7 +35,7 @@ typedef struct Options {
         int in_apps_count;
         int ex_apps_count;
 	int network_count;
-	const char *group;
+	const char *netname;
 	const char *domain_name;
 	const char *dtn_id;
 	const char *influx_host_url;

@@ -152,14 +152,14 @@ int options_get_config(char *path, int tmp_debug) {
 		net_stanza = config_setting_get_member(root, "networks");
 		net_child = config_setting_get_member(net_stanza, network_name); 
 
-		sprintf (search_str, "networks.%s.group", network_name);
+		sprintf (search_str, "networks.%s.netname", network_name);
 
-		if (!config_setting_lookup_string(net_child, "group", &string)) { 
-			log_error("Monitored network %s's group name not specified in config file! Exiting.", network_name);
+		if (!config_setting_lookup_string(net_child, "netname", &string)) { 
+			log_error("Monitored network %s's netname not specified in config file! Exiting.", network_name);
 			return -1;
 		}
-		log_debug("Network: %s, group: %s", network_name, string);
-		network->group = strdup(string);
+		log_debug("Network: %s, netname: %s", network_name, string);
+		network->netname = strdup(string);
 
 		if (!config_setting_lookup_string(net_child, "domain", &string)) {
 			log_error("Monitored network %s's domain not specified in config file! Exiting.", network_name);
