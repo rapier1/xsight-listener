@@ -84,11 +84,6 @@ void threaded_path_trace (struct PathBuild *job) {
 	int ret = -1;
 	int size = 0;
 	int total_size = 0;
-	char results[32][45]; /* hops are limited to 30 but start at 1 */
-	char flowid_char[40];
-	char *tag_str;
-	char *temp_str;
-	char influx_data[MAX_LINE_SZ_PATH];
 
 	memset(results, '\0', 32*45); /*initialize the results array to null */
 
@@ -343,8 +338,6 @@ Cleanup:
 }
 
 void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl_client *cl, int cid, char *time_marker) {
-
-	int MAX_LINE_SZ_TIME = 4096;
 	struct ThreadWrite *job;
 	uint64_t timestamp = 0;
 	char *influx_data;
@@ -426,6 +419,7 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 	struct estats_val_data* esdata = NULL;
 	struct ThreadWrite *job;
 	char *tag_str;
+	char *influx_data;
 	char estats_val[128];
 	int total_size = 0;
 	int i, tag_str_len;
