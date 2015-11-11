@@ -260,7 +260,7 @@ int main(int argc, char *argv[]) {
 		
 		/* set the seen flag in the hash to zero */
 		HASH_ITER(hh, activeflows, temphash, vtemphash) {
-			temphash->seen = 0;
+			temphash->seen = false;
 		}
 		estats_list_for_each(&clist->connection_info_head, ci, list) {
 			/* if the cmdline is empty then the connection is dead so skip it */
@@ -281,27 +281,39 @@ int main(int argc, char *argv[]) {
 			temphash = hash_find_cid(ci->cid);
 			if (temphash != NULL) {
 				/* if it is then set the seen flag to 1 */
-				temphash->seen = 1;
+				temphash->seen = true;
+				temphash->age++; /* age of flow */
+				printf ("age: %d\n", temphash->age);
+				if (temphash->age >= options.conn_interval && 
+				    temphash->added == false) {
+					add_flow_influx(curlpool, temphash, ci);
+					read_metrics(curlpool, temphash, cl);
+					add_time(curlpool, temphash, cl, ci->cid, "StartTime");
+					add_path_trace(curlpool, tracepool, temphash, ci);
+					temphash->added = true;
+				}
 			} else {
 				/* if it is not then add the connection to our hash */
 				temphash = hash_add_connection(ci);
-				temphash->closed = 0;
-				add_flow_influx(curlpool, temphash, ci);
-				read_metrics(curlpool, temphash, cl);
-				add_time(curlpool, temphash, cl, ci->cid, "StartTime");
-				add_path_trace(curlpool, tracepool, temphash, ci);
+				temphash->closed = false;
+				temphash->age = 1; /*start at 1 as the connection 1 second old */
+				/* don't add this hash to the db until it's reaches a min age*/
 			}		
 		}
 		/* iterate over all of the flows we've collected*/
 		HASH_ITER(hh, activeflows, temphash, vtemphash) {
 			/* delete stale flows from the hash */
-			if (temphash->seen == 0) {
+			if (temphash->seen == false) {
 				if (hash_delete_flow(temphash->cid) != 1) {
 					log_error("Error deleting flow %d from table.", temphash->cid);
 				}
 				continue;
 			}
 
+			/* we only care about flows that live longer than our mininmum */
+			if (temphash->age <= options.conn_interval) 
+				continue;
+			
 			/* the flow has not expired so get the state information */
 			Chk(estats_nl_client_set_mask(cl, &state_mask));
 			Chk2Ign(estats_read_vars(esdata, temphash->cid, cl));
@@ -309,7 +321,7 @@ int main(int argc, char *argv[]) {
 			/* the connection has not closed so check to see if the timer expired */
 			/* but only if the flow is not closed (as per the state) */
 			if ((time(NULL) - temphash->lastpoll >= options.metric_interval) 
-			    && (temphash->closed != 1)) {
+			    && (temphash->closed == false)) {
 				// get data
 				temphash->lastpoll = time(NULL);
 				read_metrics(curlpool, temphash, cl);
@@ -319,7 +331,7 @@ int main(int argc, char *argv[]) {
 			for (i = 0; i < esdata->length; i++) {
 				if (esdata->val[i].masked)
 					continue;
-				if ((esdata->val[i].sv32 == 1) && (temphash->closed != 1)) {
+				if ((esdata->val[i].sv32 == 1) && (temphash->closed == false)) {
 					/*connection has closed (state:1 means closed) - 
 					 * get final stats*/
 					/* don't delete the hash here. 
@@ -329,7 +341,7 @@ int main(int argc, char *argv[]) {
 					 */
 					read_metrics(curlpool, temphash, cl);
 					add_time(curlpool, temphash, NULL, 0, "EndTime");
-					temphash->closed = 1;
+					temphash->closed = true;
 				}
 			}
 		}
@@ -339,7 +351,8 @@ int main(int argc, char *argv[]) {
 		log_debug("Hash count: %d", hash_count_hash());
 		if (exitnow)
 			goto Cleanup;
-		sleep(options.conn_interval);
+		/* sleep(options.conn_interval); */
+		sleep (1);
 	}
 	
  Cleanup:

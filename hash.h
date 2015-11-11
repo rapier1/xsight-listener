@@ -18,6 +18,7 @@
 #ifndef HASH_H
 #define HASH_H
 #include <uuid/uuid.h>
+#include <stdbool.h>
 #include "uthash.h"
 #include "debug.h"
 #include "scripts.h"
@@ -25,16 +26,18 @@
 #include "parse.h"
 
 typedef struct ConnectionHash {
-	int cid;
-	uint64_t lastpoll;
-	int seen;
-	int closed; 
-	uuid_t flowid;
-	const char *flowid_char;
-	const char *netname;
-	const char *domain_name;
-	influxConn *conn;
-	UT_hash_handle hh;
+	int cid;            /* connection id from estats*/
+	uint64_t lastpoll;  /* last polling period in seconds */
+	int age;            /* age of flow in seconds (maximum age of ~68 years) */
+        bool seen;          /* boolean - have we seen this previously */
+	bool closed;        /* connection state */
+	bool added;         /* already added to db */
+	uuid_t flowid;      /* unique flow id (uuid) used in database */
+	const char *flowid_char; /* char representation of uuid */
+	const char *netname;     /* name of associated network 0 */
+	const char *domain_name; /* name of asscoiated admin domain */
+	influxConn *conn;        /* curl connection handle */
+	UT_hash_handle hh;       /* hash handle */
 } ConnectionHash;
 
 typedef struct NetworksHash {

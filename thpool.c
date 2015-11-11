@@ -18,6 +18,7 @@
 #include <time.h> 
 
 #include "thpool.h"
+#include "debug.h"
 
 #ifdef THPOOL_DEBUG
 #define THPOOL_DEBUG 1
@@ -496,7 +497,7 @@ static struct job* jobqueue_pull(thpool_* thpool_p){
 					
 	}
 
-	fprintf(stderr, "Jobs Q: %d\n", thpool_p->jobqueue_p->len);	
+	log_debug("Jobs Q: %d", thpool_p->jobqueue_p->len);	
 	return job_p;
 }
 
