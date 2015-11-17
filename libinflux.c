@@ -110,8 +110,6 @@ char* build_query_url(influxConn *conn)
 void rest_cleanup(influxConn *conn)
 {
     curl_easy_cleanup(conn->curl);
-    curl_global_cleanup();
-    fclose(resOut);
 }
 
 //setter functions for influxConn struct

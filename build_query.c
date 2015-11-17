@@ -543,12 +543,11 @@ void threaded_influx_write (struct ThreadWrite *job) {
 	CURLcode curl_res;
 	influxConn *mycurl = NULL;
 	
-	mycurl = create_conn ((char *)job->conn->host_url, (char *)job->conn->db, 
-			      (char *)job->conn->user, (char *)job->conn->pass,
-			      job->conn->ssl);        
+	mycurl = create_conn ((char *)job->conn->host_url, (char *)job->conn->db,
+	 		      (char *)job->conn->user, (char *)job->conn->pass,
+	 		      job->conn->ssl);
  
 	if ((curl_res = influxWrite(mycurl, job->data) != CURLE_OK)) {
-//	if ((curl_res = influxWrite(job->conn, job->data) != CURLE_OK)) {
 		log_error("CURL failure: %s for %s", curl_easy_strerror(curl_res), job->action);
 	} else {
 	 	log_debug("%s", job->action);
