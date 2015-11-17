@@ -544,7 +544,8 @@ void threaded_influx_write (struct ThreadWrite *job) {
 	influxConn *mycurl = NULL;
 	
 	mycurl = create_conn ((char *)job->conn->host_url, (char *)job->conn->db, 
-			      (char *)job->conn->user, (char *)job->conn->pass);        
+			      (char *)job->conn->user, (char *)job->conn->pass,
+			      job->conn->ssl);        
  
 	if ((curl_res = influxWrite(mycurl, job->data) != CURLE_OK)) {
 //	if ((curl_res = influxWrite(job->conn, job->data) != CURLE_OK)) {

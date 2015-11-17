@@ -32,7 +32,7 @@ int options_get_config(char *path, int tmp_debug) {
 	
 	/*read config file*/
 	if (!config_read_file(&cfg, path)) {
-		log_error("%s:%d - %s (bad path to config file?)", 
+		log_error("%s:%d - %s (bad path or syntax error in config file?)", 
 			  config_error_file(&cfg), config_error_line(&cfg), 
 			  config_error_text(&cfg));
 		return -1;
@@ -174,6 +174,17 @@ int options_get_config(char *path, int tmp_debug) {
 		}
 		log_debug("Network: %s, host_url: %s", network_name, string);
 		network->influx_host_url = strdup(string);
+
+		if (!config_setting_lookup_string(net_child, "verify_ssl", &string)) {
+			log_error("Verification of %s SSL cert not specified in config! Defaulting to 1", network_name);
+			network->verify_ssl = 1;
+		} else {
+			if (atoi(string) > 0) 
+				network->verify_ssl = 1;
+			else
+				network->verify_ssl = 0;
+		}
+		log_debug("Verify SSL certificate on %s: %d", network->influx_host_url, network->verify_ssl);
 
 		if (!config_setting_lookup_string(net_child, "database", &string)) {
 			log_error("Monitored network %s's database not specified in config file! Exiting.", network_name);

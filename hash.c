@@ -68,8 +68,11 @@ int hash_get_curl_handles () {
 	HASH_ITER(hh, networks, current, temp) {
 		/* create the connection */
 
-		mycurl = create_conn ((char *)current->influx_host_url, (char *)current->influx_database, 
-				      (char *)current->influx_user, (char *)current->influx_password);
+		mycurl = create_conn ((char *)current->influx_host_url, 
+				      (char *)current->influx_database, 
+				      (char *)current->influx_user, 
+				      (char *)current->influx_password,
+				      current->verify_ssl);
 		log_debug ("Created connection for %s to %s: %p", current->netname, current->influx_host_url, mycurl);
 
 		current->conn = mycurl; /*current->conn needs *some* value before leaving this function*/

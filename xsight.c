@@ -283,7 +283,7 @@ int main(int argc, char *argv[]) {
 				/* if it is then set the seen flag to 1 */
 				temphash->seen = true;
 				temphash->age++; /* age of flow */
-				printf ("age: %d\n", temphash->age);
+				/*only add to db if old enough and not already added */
 				if (temphash->age >= options.conn_interval && 
 				    temphash->added == false) {
 					add_flow_influx(curlpool, temphash, ci);

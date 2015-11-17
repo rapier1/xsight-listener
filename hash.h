@@ -44,6 +44,7 @@ typedef struct NetworksHash {
 	int network_id; /*key*/
 	int net_addrs_count; /* number of networks in net_addrs */
 	int precedence; /* we want to sort the hash so 'interior' is always first */
+	int verify_ssl; /* default to true */
 	const char *netname;
 	const char *domain_name;
 	const char *influx_host_url;
