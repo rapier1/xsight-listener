@@ -286,11 +286,11 @@ int main(int argc, char *argv[]) {
 				/*only add to db if old enough and not already added */
 				if (temphash->age >= options.conn_interval && 
 				    temphash->added == false) {
+					temphash->added = true;
 					add_flow_influx(curlpool, temphash, ci);
 					read_metrics(curlpool, temphash, cl);
 					add_time(curlpool, temphash, cl, ci->cid, "StartTime");
 					add_path_trace(curlpool, tracepool, temphash, ci);
-					temphash->added = true;
 				}
 			} else {
 				/* if it is not then add the connection to our hash */

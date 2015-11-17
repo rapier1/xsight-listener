@@ -111,7 +111,6 @@ void rest_cleanup(influxConn *conn)
 {
     curl_easy_cleanup(conn->curl);
     curl_global_cleanup();
-//    fclose(devnull);
     fclose(resOut);
 }
 

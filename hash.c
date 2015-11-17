@@ -97,7 +97,7 @@ struct ConnectionHash *hash_add_connection (struct estats_connection_info *conn)
 	struct ConnectionHash *flow = NULL;
 	flow = (ConnectionHash*)malloc(sizeof(ConnectionHash));
 	flow->cid = conn->cid;
-	flow->seen = 1;
+	flow->seen = true;
 	flow->lastpoll = time(NULL);
 	HASH_ADD_INT(activeflows, cid, flow);
 	log_debug("Added hash: %d", flow->cid, conn->cmdline);
@@ -139,10 +139,13 @@ int hash_delete_flow (int cid) {
 	if (current != NULL) {
 		log_debug("Deleting flow: %d", current->cid);
 		HASH_DEL(activeflows, current);
-		free((void *)current->netname);
-		free((void *)current->domain_name);
-		free((void *)current->flowid_char);
-		free(current);
+		/* we may delete a flow before these are added to the struct */
+		if (current->added) {
+			free((void *)current->netname);
+			free((void *)current->domain_name);
+			free((void *)current->flowid_char);
+			free(current);
+		}
 		return 1;
 	}
 	return 0;
