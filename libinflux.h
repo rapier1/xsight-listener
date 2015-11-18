@@ -14,6 +14,7 @@ typedef struct {
     int ssl; // 1: ssl enabled & verify peer; 0: insecure ssl - don't verify peer; -1: ssl disabled
 } influxConn;
 extern void rest_init();
+extern void rest_end();
 extern void rest_cleanup();
 extern influxConn* create_conn(char *, char *,char *, char *, int);
 extern char* build_write_url(influxConn*);

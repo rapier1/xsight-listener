@@ -20,6 +20,9 @@
 extern struct ConnectionHash *activeflows;
 extern struct NetworksHash *networks;
 
+char unknown_domain[] = "UNKNOWN Domain";
+char unknown_netname[] = "UNKNOWN Network Name";
+
 int _by_precedence(NetworksHash *, NetworksHash *); /*forward declaration*/
 
 void hash_add_network(struct NetworksHash *n, int network_id) {
@@ -48,12 +51,7 @@ influxConn *hash_find_curl_handle(const char *netname) {
 void hash_close_curl_handles() {
 	struct NetworksHash *current, *temp;
 	HASH_ITER(hh, networks, current, temp) {
-		free((void *)current->conn->host_url);
-		free((void *)current->conn->db);
-		free((void *)current->conn->user);
-		free((void *)current->conn->pass);
 		rest_cleanup(current->conn);
-		free(current->conn);
 	}
 }
 
@@ -122,30 +120,22 @@ int hash_get_tags(struct estats_connection_tuple_ascii *asc, struct ConnectionHa
 		if ((current->net_addrs_count == 0) || (match_ips(asc->rem_addr, 
 								  current->net_addrs, 
 								  current->net_addrs_count))) {
-
-			//flow->netname = strndup(current->netname, strlen(current->netname));
-			//flow->domain_name = strndup(current->domain_name, strlen(current->domain_name));
-			flow->netname = realloc((void *)flow->netname, strlen(current->netname));
-			strncpy((char *)flow->netname, current->netname, strlen(current->netname));
-			flow->domain_name = realloc((void *)flow->domain_name, strlen(current->domain_name));
-			strncpy((char *)flow->domain_name, current->domain_name, strlen(current->domain_name));
+			flow->netname = current->netname;
+			flow->domain_name = current->domain_name;
 			return 1;
 		}
 	}
-        /* if there is no match to any known network */
-	flow->netname = realloc((void *)flow->netname, 12);
-	strncpy((char *)flow->netname, "UNK Netname\0", 12);
-	flow->domain_name = realloc((void *)flow->domain_name, 11);
-	strncpy((char *)flow->domain_name, "UNK Domain\0", 11);
+	/* can't match the ip to a known domain */
+	flow->netname = unknown_netname;
+	flow->domain_name = unknown_domain;
 	return 0;
 }
 
 void hash_init_flow (struct ConnectionHash *flow) {
-	flow->added = true;
+	flow->added = false;
+	flow->closed = false;
 	flow->age = 1;
 	flow->flowid_char = malloc (37);
-	flow->domain_name = malloc (1);
-	flow->netname = malloc (1);
 	return;
 }
 
@@ -155,8 +145,6 @@ int hash_delete_flow (int cid) {
 	if (current != NULL) {
 		log_debug("Deleting flow: %d", current->cid);
 		HASH_DEL(activeflows, current);
-		free((void *)current->netname);
-		free((void *)current->domain_name);
 		free((void *)current->flowid_char);
 		free(current);
 		return 1;

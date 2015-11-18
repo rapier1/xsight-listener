@@ -290,15 +290,12 @@ int main(int argc, char *argv[]) {
 					read_metrics(curlpool, temphash, cl);
 					add_time(curlpool, temphash, cl, ci->cid, "StartTime");
 					add_path_trace(curlpool, tracepool, temphash, ci);
+					temphash->added = true;
 				}
 			} else {
 				/* if it is not then add the connection to our hash */
 				temphash = hash_add_connection(ci);
 				hash_init_flow(temphash);
-				//temphash->closed = false;
-				//temphash->age = 1; /*start at 1 as the connection 1 second old */
-				//temphash->flowid_char = malloc(37);
-				/* don't add this hash to the db until it's reaches a min age*/
 			}		
 		}
 		/* iterate over all of the flows we've collected*/
@@ -359,8 +356,13 @@ int main(int argc, char *argv[]) {
  Cleanup:
 	estats_nl_client_destroy(&cl);
 
+	/* destroy the threadpools*/
+	thpool_destroy(curlpool);
+	thpool_destroy(tracepool);
+
 	/* close the rest connection*/
 	hash_close_curl_handles();
+	rest_end();
 
 	/* free the hash */
 	hash_clear_hash();
@@ -368,11 +370,6 @@ int main(int argc, char *argv[]) {
 	/* free the option struct*/
 	options_freeoptions();
 	
-	curl_global_cleanup();
-
-	/* destroy the threadpools*/
-	thpool_destroy(curlpool);
-	thpool_destroy(tracepool);
 
 	if (err != NULL) {
 		PRINT_AND_FREE(err);
