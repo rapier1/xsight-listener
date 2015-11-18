@@ -286,7 +286,6 @@ int main(int argc, char *argv[]) {
 				/*only add to db if old enough and not already added */
 				if (temphash->age >= options.conn_interval && 
 				    temphash->added == false) {
-					temphash->added = true;
 					add_flow_influx(curlpool, temphash, ci);
 					read_metrics(curlpool, temphash, cl);
 					add_time(curlpool, temphash, cl, ci->cid, "StartTime");
@@ -295,8 +294,10 @@ int main(int argc, char *argv[]) {
 			} else {
 				/* if it is not then add the connection to our hash */
 				temphash = hash_add_connection(ci);
-				temphash->closed = false;
-				temphash->age = 1; /*start at 1 as the connection 1 second old */
+				hash_init_flow(temphash);
+				//temphash->closed = false;
+				//temphash->age = 1; /*start at 1 as the connection 1 second old */
+				//temphash->flowid_char = malloc(37);
 				/* don't add this hash to the db until it's reaches a min age*/
 			}		
 		}

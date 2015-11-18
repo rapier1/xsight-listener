@@ -216,7 +216,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 
 	/* create the flowid */
 	uuid_generate(flow->flowid);
-	flow->flowid_char = malloc(37); /* length of uuid + null */
+//	flow->flowid_char = malloc(37); /* length of uuid + null */
 	uuid_unparse(flow->flowid, (char *)flow->flowid_char);
 
 	/* match the IP to appropriate network from the config file */
@@ -554,11 +554,6 @@ void threaded_influx_write (struct ThreadWrite *job) {
 	}
 	
 	rest_cleanup(mycurl);
-	free((void *)mycurl->host_url);
-	free((void *)mycurl->db);
-	free((void *)mycurl->user);
-	free((void *)mycurl->pass);
-	free(mycurl);
 	
 	log_debug2("%s", job->data);
 	free(job->data);

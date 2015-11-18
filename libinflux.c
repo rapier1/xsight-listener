@@ -110,6 +110,15 @@ char* build_query_url(influxConn *conn)
 void rest_cleanup(influxConn *conn)
 {
     curl_easy_cleanup(conn->curl);
+    free((void *)conn->host_url);
+    free((void *)conn->db);
+    free((void *)conn->user);
+    free((void *)conn->pass);
+    free(conn);
+}
+
+void rest_end() {
+	curl_global_cleanup();
 }
 
 //setter functions for influxConn struct

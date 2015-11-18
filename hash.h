@@ -64,6 +64,7 @@ int hash_get_curl_handles ();
 void hash_add_network(NetworksHash *, int);
 struct ConnectionHash *hash_find_cid (int);
 struct ConnectionHash *hash_add_connection (struct estats_connection_info *);
+void hash_init_flow(struct ConnectionHash *);
 int hash_delete_flow (int);
 void hash_clear_hash();
 int hash_count_hash();

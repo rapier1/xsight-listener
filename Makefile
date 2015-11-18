@@ -81,8 +81,7 @@ subdir = .
 DIST_COMMON = INSTALL NEWS README AUTHORS ChangeLog \
 	$(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
-	$(srcdir)/config.h.in $(top_srcdir)/../depcomp COPYING \
-	$(top_srcdir)/../install-sh $(top_srcdir)/../missing
+	$(srcdir)/config.h.in depcomp COPYING install-sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -114,7 +113,7 @@ am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
 am__v_at_0 = @
 am__v_at_1 = 
 DEFAULT_INCLUDES = -I.
-depcomp = $(SHELL) $(top_srcdir)/../depcomp
+depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -175,12 +174,12 @@ distuninstallcheck_listfiles = find . -type f -print
 am__distuninstallcheck_listfiles = $(distuninstallcheck_listfiles) \
   | sed 's|^\./|$(prefix)/|' | grep -v '$(infodir)/dir$$'
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} /home/rapier/xsight/missing aclocal-1.13
+ACLOCAL = ${SHELL} /home/rapier/src/xsight-listener/missing aclocal-1.13
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 1
-AUTOCONF = ${SHELL} /home/rapier/xsight/missing autoconf
-AUTOHEADER = ${SHELL} /home/rapier/xsight/missing autoheader
-AUTOMAKE = ${SHELL} /home/rapier/xsight/missing automake-1.13
+AUTOCONF = ${SHELL} /home/rapier/src/xsight-listener/missing autoconf
+AUTOHEADER = ${SHELL} /home/rapier/src/xsight-listener/missing autoheader
+AUTOMAKE = ${SHELL} /home/rapier/src/xsight-listener/missing automake-1.13
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
@@ -205,7 +204,7 @@ LDFLAGS =
 LIBOBJS = 
 LIBS = -luuid -lconfig -lcurl -lestats -lpthread 
 LTLIBOBJS = 
-MAKEINFO = ${SHELL} /home/rapier/xsight/missing makeinfo
+MAKEINFO = ${SHELL} /home/rapier/src/xsight-listener/missing makeinfo
 MKDIR_P = /usr/bin/mkdir -p
 OBJEXT = o
 PACKAGE = insight
@@ -220,10 +219,10 @@ SET_MAKE =
 SHELL = /bin/sh
 STRIP = 
 VERSION = 0.1
-abs_builddir = /home/rapier/xsight/newcode
-abs_srcdir = /home/rapier/xsight/newcode
-abs_top_builddir = /home/rapier/xsight/newcode
-abs_top_srcdir = /home/rapier/xsight/newcode
+abs_builddir = /home/rapier/src/xsight-listener
+abs_srcdir = /home/rapier/src/xsight-listener
+abs_top_builddir = /home/rapier/src/xsight-listener
+abs_top_srcdir = /home/rapier/src/xsight-listener
 ac_ct_CC = gcc
 am__include = include
 am__leading_dot = .
@@ -242,7 +241,7 @@ host_alias =
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/rapier/xsight/install-sh
+install_sh = ${SHELL} /home/rapier/src/xsight-listener/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -262,7 +261,7 @@ target_alias =
 top_build_prefix = 
 top_builddir = .
 top_srcdir = .
-AM_CFLAGS = -O3 -g -Wall -Wextra -std=gnu99 -fgnu89-inline
+AM_CFLAGS = -O0 -g -Wall -Wextra -std=gnu99 -fgnu89-inline
 AM_LDFLAGS = -lestats -lcurl -luuid -lconfig -lpthread
 xsight_SOURCES = xsight.c hash.c build_query.c options.c libinflux.c \
 		debug.c parse.c thpool.c tracer.c

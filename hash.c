@@ -123,14 +123,30 @@ int hash_get_tags(struct estats_connection_tuple_ascii *asc, struct ConnectionHa
 								  current->net_addrs, 
 								  current->net_addrs_count))) {
 
-			flow->netname = strndup(current->netname, strlen(current->netname));
-			flow->domain_name = strndup(current->domain_name, strlen(current->domain_name));
+			//flow->netname = strndup(current->netname, strlen(current->netname));
+			//flow->domain_name = strndup(current->domain_name, strlen(current->domain_name));
+			flow->netname = realloc((void *)flow->netname, strlen(current->netname));
+			strncpy((char *)flow->netname, current->netname, strlen(current->netname));
+			flow->domain_name = realloc((void *)flow->domain_name, strlen(current->domain_name));
+			strncpy((char *)flow->domain_name, current->domain_name, strlen(current->domain_name));
 			return 1;
 		}
 	}
-	/* if there is no match to any known network what should we do? */
-	/* right now, nothing */
+        /* if there is no match to any known network */
+	flow->netname = realloc((void *)flow->netname, 12);
+	strncpy((char *)flow->netname, "UNK Netname\0", 12);
+	flow->domain_name = realloc((void *)flow->domain_name, 11);
+	strncpy((char *)flow->domain_name, "UNK Domain\0", 11);
 	return 0;
+}
+
+void hash_init_flow (struct ConnectionHash *flow) {
+	flow->added = true;
+	flow->age = 1;
+	flow->flowid_char = malloc (37);
+	flow->domain_name = malloc (1);
+	flow->netname = malloc (1);
+	return;
 }
 
 int hash_delete_flow (int cid) {
@@ -139,13 +155,10 @@ int hash_delete_flow (int cid) {
 	if (current != NULL) {
 		log_debug("Deleting flow: %d", current->cid);
 		HASH_DEL(activeflows, current);
-		/* we may delete a flow before these are added to the struct */
-		if (current->added) {
-			free((void *)current->netname);
-			free((void *)current->domain_name);
-			free((void *)current->flowid_char);
-			free(current);
-		}
+		free((void *)current->netname);
+		free((void *)current->domain_name);
+		free((void *)current->flowid_char);
+		free(current);
 		return 1;
 	}
 	return 0;
