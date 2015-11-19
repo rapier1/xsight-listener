@@ -28,6 +28,13 @@ struct NetworksHash *networks = NULL;
 /* global struct for active connections/flows */
 struct ConnectionHash *activeflows = NULL;
 
+/* initially I was calling this function for every single connection
+ * we saw every time we cycled through things. Turns out this is
+ * pretty expensive. Durr. So we will only call this when a flow 
+ * lives long enough to be of interest to us. Additionally, we
+ * will only call this once per flow. You mean I was calling it multiple 
+ * times per flow? Yes. Because Durr. 
+ */
 int filter_connection (struct estats_connection_info *conn) {
 	struct estats_error *err = NULL;
 	struct estats_connection_tuple_ascii asc;
@@ -264,24 +271,28 @@ int main(int argc, char *argv[]) {
 		}
 		estats_list_for_each(&clist->connection_info_head, ci, list) {
 			/* if the cmdline is empty then the connection is dead so skip it */
-			/* technically the cmd line would be empty because the cid can't find
-			 * a corresponding entry in the pid table. Thsi may fail in some 
-			 * cirucmstances so a better way to handle this might be useful
-			 */
-			if (strlen(ci->cmdline) == 0) {
-				continue;
-			}
-			/* filter incoming connections based on option rule sets */
-			if (filter_connection(ci) == 1) {
-				continue;
-			}
-			/* check to see if the CID is already in our hash of active connections*/
+                        /* technically the cmd line would be empty because the cid can't find
+                         * a corresponding entry in the pid table. Thsi may fail in some 
+                         * cirucmstances so a better way to handle this might be useful
+                         */
+                        if (strlen(ci->cmdline) == 0) {
+                                continue;
+                        }
+
 			temphash = NULL;
+			/* check to see if the CID is already in our hash of active connections*/
 			/* TODO: the following line might taking up too much time. What could be faster?*/
 			temphash = hash_find_cid(ci->cid);
+
 			if (temphash != NULL) {
 				/* if it is then set the seen flag to 1 */
 				temphash->seen = true;
+				/* since we are putting everything in the hash we need to make sure
+				 *  that we set continuing flows to true *even if* we are excluding them
+				 *  otherwise they'll be deleted and readded unnessarily
+				 */
+				if (temphash->exclude == true)
+					continue;
 				temphash->age++; /* age of flow */
 				/*only add to db if old enough and not already added */
 				if (temphash->age >= options.conn_interval && 
@@ -296,6 +307,10 @@ int main(int argc, char *argv[]) {
 				/* if it is not then add the connection to our hash */
 				temphash = hash_add_connection(ci);
 				hash_init_flow(temphash);
+				if (filter_connection(ci) == 1)
+					temphash->exclude = true;
+				else
+					temphash->exclude = false;
 			}		
 		}
 		/* iterate over all of the flows we've collected*/

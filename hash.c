@@ -158,8 +158,6 @@ void hash_clear_hash () {
 	int i;
 	HASH_ITER(hh, activeflows, curconn, tempconn) {
 		HASH_DEL(activeflows, curconn);
-		free((void *)curconn->netname);
-		free((void *)curconn->domain_name);
 		free((void *)curconn->flowid_char);
 		free(curconn);
 	}

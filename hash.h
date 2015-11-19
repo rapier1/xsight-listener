@@ -32,6 +32,7 @@ typedef struct ConnectionHash {
         bool seen;          /* boolean - have we seen this previously */
 	bool closed;        /* connection state */
 	bool added;         /* already added to db */
+	bool exclude;       /* this flow is filtered out based on the rules if true */
 	uuid_t flowid;      /* unique flow id (uuid) used in database */
 	const char *flowid_char; /* char representation of uuid */
 	const char *netname;     /* name of associated network 0 */
