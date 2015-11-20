@@ -51,7 +51,7 @@ influxConn *hash_find_curl_handle(const char *netname) {
 void hash_close_curl_handles() {
 	struct NetworksHash *current, *temp;
 	HASH_ITER(hh, networks, current, temp) {
-		rest_cleanup(current->conn);
+		free_conn(current->conn);
 	}
 }
 

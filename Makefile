@@ -261,7 +261,7 @@ target_alias =
 top_build_prefix = 
 top_builddir = .
 top_srcdir = .
-AM_CFLAGS = -O2 -Wall -Wextra -std=gnu99 -fgnu89-inline -fno-omit-frame-pointer
+AM_CFLAGS = -O2 -g -Wall -Wextra -std=gnu99 -fgnu89-inline -fno-omit-frame-pointer
 AM_LDFLAGS = -lestats -lcurl -luuid -lconfig -lpthread
 xsight_SOURCES = xsight.c hash.c build_query.c options.c libinflux.c \
 		debug.c parse.c thpool.c tracer.c

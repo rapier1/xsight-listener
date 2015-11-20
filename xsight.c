@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	rest_init();
+	libinflux_init();
 
 	/* iterate over the various networks and generate a curl handle for each of them */
 	/* store a pointer to the curl handle in the entry in the hash */
@@ -377,7 +377,7 @@ int main(int argc, char *argv[]) {
 
 	/* close the rest connection*/
 	hash_close_curl_handles();
-	rest_end();
+	libinflux_cleanup();
 
 	/* free the hash */
 	hash_clear_hash();

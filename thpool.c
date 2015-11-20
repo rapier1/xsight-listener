@@ -255,9 +255,15 @@ void thpool_destroy(thpool_* thpool_p){
 	}
 	
 	/* Poll remaining threads */
+	/* sometimes it gets stuck here. I don't know why
+	 * but I added a timer to kick it out of here
+	 * after 10 seconds -cjr */
+	int timer = 0;
 	while (thpool_p->num_threads_alive){
 		bsem_post_all(thpool_p->jobqueue_p->has_jobs);
 		sleep(1);
+		if (timer++ >= 10)
+			break;
 	}
 
 	/* Job queue cleanup */
@@ -343,9 +349,6 @@ static void* thread_do(struct thread* thread_p){
 	/* Register signal handler */
 	struct sigaction act;
 	act.sa_handler = thread_hold;
-	act.sa_flags = 0;
-	sigemptyset(&act.sa_mask);
-	sigaddset(&act.sa_mask, SIGINT);
 	if (sigaction(SIGUSR1, &act, NULL) == -1) {
 		fprintf(stderr, "thread_do(): cannot handle SIGUSR1");
 	}
@@ -496,8 +499,7 @@ static struct job* jobqueue_pull(thpool_* thpool_p){
 					bsem_post(thpool_p->jobqueue_p->has_jobs);
 					
 	}
-
-	log_debug("Jobs Q: %d", thpool_p->jobqueue_p->len);	
+	log_debug("Jobs Q: %d", thpool_p->jobqueue_p->len);
 	return job_p;
 }
 

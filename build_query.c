@@ -553,7 +553,7 @@ void threaded_influx_write (struct ThreadWrite *job) {
 	 	log_debug("%s", job->action);
 	}
 	
-	rest_cleanup(mycurl);
+	free_conn(mycurl);
 	
 	log_debug2("%s", job->data);
 	free(job->data);
