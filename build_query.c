@@ -314,6 +314,18 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	}
 	free(temp_str);
 
+	/* add the analyzed tag */
+	size = strlen("analyzed\"\"\n") + tag_str_len +strlen("0") + 1; 
+	total_size += size;
+	temp_str = malloc(size + 1);
+	temp_str[size-1] = '\0';
+	snprintf(temp_str, size, "analyzed%s\"%s\"\n", tag_str, "0");
+	if (total_size < MAX_LINE_SZ_FLOW) {
+		strncat(influx_data, temp_str, size);
+		influx_data[total_size-1] = '\0';
+	}
+	free(temp_str);
+
 	/* note, we'll set the start time when we make the initial instrument read */
         
 	/* the flow meta data is in influx_data
