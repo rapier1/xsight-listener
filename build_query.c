@@ -314,7 +314,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	}
 	free(temp_str);
 
-	/* add the analyzed tag */
+	/* add the analyzed sereis */
 	size = strlen("analyzed\"\"\n") + tag_str_len +strlen("0") + 1; 
 	total_size += size;
 	temp_str = malloc(size + 1);
@@ -325,6 +325,20 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 		influx_data[total_size-1] = '\0';
 	}
 	free(temp_str);
+
+
+	/* add the updated sereis */
+	size = strlen("updated\"\"\n") + tag_str_len +strlen("0") + 1; 
+	total_size += size;
+	temp_str = malloc(size + 1);
+	temp_str[size-1] = '\0';
+	snprintf(temp_str, size, "updated%s\"%s\"\n", tag_str, "0");
+	if (total_size < MAX_LINE_SZ_FLOW) {
+		strncat(influx_data, temp_str, size);
+		influx_data[total_size-1] = '\0';
+	}
+	free(temp_str);
+
 
 	/* note, we'll set the start time when we make the initial instrument read */
         
@@ -432,9 +446,10 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 	struct ThreadWrite *job;
 	char *tag_str;
 	char *influx_data;
+	char *update_str;
 	char estats_val[128];
 	int total_size = 0;
-	int i, tag_str_len;
+	int i, tag_str_len, update_str_len;
 	uint64_t timestamp = 0;
 	/* maximum observed size has been under 16k but lets be extra safe */
 	int MAX_LINE_SZ_METRIC = 24576;
@@ -527,6 +542,28 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 			influx_data[total_size - 1] = '\0';
 		}
 		free(temp_str);
+	}
+
+	/* Add a line for the update field in the flowdata 
+	 * influx doesn't have a method to update an existing datapoint 
+	 * except for overwriting it. To do this you need the timestamp. 
+	 * however, we don't make any reads against the database so we set the timestamp
+	 * for every datapoint in the update series to the same value of 0
+	 */
+
+	update_str_len = strlen("updated,type=flowdata,netname=,domain=,dtn=,flow= value=")
+		+ strlen (flow->netname) + strlen (flow->domain_name) 
+		+ strlen(options.dtn_id) + strlen (flow->flowid_char) + 1;
+	update_str = malloc(tag_str_len * sizeof(char) + 1);
+	snprintf(update_str, update_str_len, "updated,type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=%"PRIu64" 0", 
+		 flow->netname, flow->domain_name, options.dtn_id, flow->flowid_char, timestamp);
+	update_str[update_str_len-1] = '\0';
+
+	total_size += update_str_len;
+
+	if (total_size < MAX_LINE_SZ_METRIC) {
+		strncat(influx_data, update_str, update_str_len);
+		influx_data[total_size - 1] = '\0';
 	}
 
 	job = malloc(sizeof(struct ThreadWrite));
