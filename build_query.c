@@ -554,7 +554,7 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 	update_str_len = strlen("updated,type=flowdata,netname=,domain=,dtn=,flow= value=")
 		+ strlen (flow->netname) + strlen (flow->domain_name) 
 		+ strlen(options.dtn_id) + strlen (flow->flowid_char) + 1;
-	update_str = malloc(tag_str_len * sizeof(char) + 1);
+	update_str = malloc(update_str_len * sizeof(char) + 1);
 	snprintf(update_str, update_str_len, "updated,type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=%"PRIu64" 0", 
 		 flow->netname, flow->domain_name, options.dtn_id, flow->flowid_char, timestamp);
 	update_str[update_str_len-1] = '\0';
