@@ -328,11 +328,11 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 
 
 	/* add the updated sereis */
-	size = strlen("updated\"\"\n") + tag_str_len +strlen("0") + 1; 
+	size = strlen("updated\"\" 0\n") + tag_str_len +strlen("0") + 1; 
 	total_size += size;
 	temp_str = malloc(size + 1);
 	temp_str[size-1] = '\0';
-	snprintf(temp_str, size, "updated%s\"%s\"\n", tag_str, "0");
+	snprintf(temp_str, size, "updated%s\"%s\" 0\n", tag_str, "0");
 	if (total_size < MAX_LINE_SZ_FLOW) {
 		strncat(influx_data, temp_str, size);
 		influx_data[total_size-1] = '\0';
@@ -553,7 +553,7 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 
 	update_str_len = strlen("updated,type=flowdata,netname=,domain=,dtn=,flow= value=")
 		+ strlen (flow->netname) + strlen (flow->domain_name) 
-		+ strlen(options.dtn_id) + strlen (flow->flowid_char) + 1;
+		+ strlen(options.dtn_id) + strlen (flow->flowid_char) + sizeof(PRIu64) + 1;
 	update_str = malloc(update_str_len * sizeof(char) + 1);
 	snprintf(update_str, update_str_len, "updated,type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=%"PRIu64" 0", 
 		 flow->netname, flow->domain_name, options.dtn_id, flow->flowid_char, timestamp);
