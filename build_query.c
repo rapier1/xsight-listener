@@ -399,17 +399,17 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 			estats_error_free(&err);
 		}		
 	} else {
-		/* StartTimeStamp is in microseconds since epoch so we have to convert
+		/* StartTimeStamp is in nanoseconds since epoch so we have to convert
 		 * time() to msecs for the EndTime
 		 */
-		timestamp = time(NULL) * 1000000;
+		timestamp = time(NULL) * 1000000000;
 	}
 	
 	/*create the tag string*/
 	length = strlen (",type=flowdata,netname=,domain=,dtn=,flow= value=") 
 		+ strlen(time_marker) + strlen (flow->netname) + strlen(flow->domain_name)
-		+ strlen(options.dtn_id) + strlen(flow->flowid_char) + 18; 
-	/* why 18? 16 for the timestamp, 1 for the eol, 1 for the null */
+		+ strlen(options.dtn_id) + strlen(flow->flowid_char) + 21; 
+	/* why 21? 19 for the timestamp, 1 for the eol, 1 for the null */
 	influx_data = malloc(length);
 	snprintf(influx_data, length, "%s,type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=%"PRIu64"\n", 
 			  time_marker, flow->netname, flow->domain_name, 
@@ -485,7 +485,7 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 	 * when we are retreiving the data
 	 */
 	
-	timestamp = flow->lastpoll * 1000000; /*influx expects the timestamp to be in microseconds*/
+	timestamp = flow->lastpoll * 1000000000; /*influx expects the timestamp to be in nanoseconds*/
 	
 	for (i = 0; i < esdata->length; i++) {
 		char *temp_str;
@@ -512,8 +512,8 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 		
 		
 		/* get the size of the new line */
-		/* 18 is the length of the timestamp +1 for null and +1 for the eol*/
-		size = strlen(estats_var_array[i].name) + strlen(estats_val) + tag_str_len + 18;
+		/* 21 is the length of the timestamp (19) +1 for null and +1 for the eol*/
+		size = strlen(estats_var_array[i].name) + strlen(estats_val) + tag_str_len + 21;
 
 		/* keep a running total of the sizes */
 		total_size += size;
@@ -540,8 +540,8 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 
 	update_str_len = strlen("updated,type=flowdata,netname=,domain=,dtn=,flow= value=")
 		+ strlen (flow->netname) + strlen (flow->domain_name) 
-		+ strlen(options.dtn_id) + strlen (flow->flowid_char) + 16 + 3;
-	/* 16 is the size of the timestamp, 3 is the space, 0 and null */
+		+ strlen(options.dtn_id) + strlen (flow->flowid_char) + 19 + 3;
+	/* 19 is the size of the timestamp, 3 is the space, 0 and null */
 	update_str = malloc(update_str_len * sizeof(char) + 1);
 	snprintf(update_str, update_str_len, "updated,type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=%"PRIu64" 0", 
 		 flow->netname, flow->domain_name, options.dtn_id, flow->flowid_char, timestamp);
@@ -554,7 +554,7 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 		influx_data[total_size - 1] = '\0';
 	}
 
-	free(update_str)
+	free(update_str);
 
 	job = malloc(sizeof(struct ThreadWrite));
 	job->action = malloc(32);
