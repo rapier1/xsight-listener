@@ -134,6 +134,7 @@ int hash_get_tags(struct estats_connection_tuple_ascii *asc, struct ConnectionHa
 void hash_init_flow (struct ConnectionHash *flow) {
 	flow->added = false;
 	flow->closed = false;
+	flow->seen = true;
 	flow->age = 1;
 	flow->flowid_char = malloc (37);
 	return;

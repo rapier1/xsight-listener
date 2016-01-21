@@ -270,19 +270,27 @@ int main(int argc, char *argv[]) {
 			temphash->seen = false;
 		}
 		estats_list_for_each(&clist->connection_info_head, ci, list) {
-			/* if the cmdline is empty then the connection is dead so skip it */
-                        /* technically the cmd line would be empty because the cid can't find
-                         * a corresponding entry in the pid table. Thsi may fail in some 
-                         * cirucmstances so a better way to handle this might be useful
-                         */
-                        if (strlen(ci->cmdline) == 0) {
-                                continue;
-                        }
-
 			temphash = NULL;
 			/* check to see if the CID is already in our hash of active connections*/
 			/* TODO: the following line might taking up too much time. What could be faster?*/
 			temphash = hash_find_cid(ci->cid);
+
+			/* if the cmdline is empty then the connection is dead so skip it */
+                        /* technically the cmd line would be empty because the cid can't find
+                         * a corresponding entry in the pid table. This may fail in some 
+                         * cirucmstances so a better way to handle this might be useful
+                         */
+                        if (strlen(ci->cmdline) == 0) {
+				/* however, we need to see if the flow is in our hash 
+				 * already and if it is then set the seen flag true. 
+				 * if we don't then the flow is marked as stale and
+				 * removed before the state information can be collected 
+				 * and EndTime set */
+				if (temphash != NULL) {
+					temphash->seen = true;
+				}
+                                continue;
+                        }
 
 			if (temphash != NULL) {
 				/* if it is then set the seen flag to 1 */
@@ -316,7 +324,7 @@ int main(int argc, char *argv[]) {
 		/* iterate over all of the flows we've collected*/
 		HASH_ITER(hh, activeflows, temphash, vtemphash) {
 			/* delete stale flows from the hash */
-			if (temphash->seen == false) {
+			if (temphash->seen == false || temphash->closed == true) {
 				if (hash_delete_flow(temphash->cid) != 1) {
 					log_error("Error deleting flow %d from table.", temphash->cid);
 				}
@@ -331,10 +339,9 @@ int main(int argc, char *argv[]) {
 			Chk(estats_nl_client_set_mask(cl, &state_mask));
 			Chk2Ign(estats_read_vars(esdata, temphash->cid, cl));
 
-			/* the connection has not closed so check to see if the timer expired */
-			/* but only if the flow is not closed (as per the state) */
-			if ((time(NULL) - temphash->lastpoll >= options.metric_interval) 
-			    && (temphash->closed == false)) {
+			/* the connection has not closed (other wise it would have been deleted) 
+			 * so check to see if the timer expired */
+			if ((time(NULL) - temphash->lastpoll >= options.metric_interval)) {
 				// get data
 				temphash->lastpoll = time(NULL);
 				read_metrics(curlpool, temphash, cl);
@@ -344,7 +351,7 @@ int main(int argc, char *argv[]) {
 			for (i = 0; i < esdata->length; i++) {
 				if (esdata->val[i].masked)
 					continue;
-				if ((esdata->val[i].sv32 == 1) && (temphash->closed == false)) {
+				if (esdata->val[i].sv32 == 1) {
 					/*connection has closed (state:1 means closed) - 
 					 * get final stats*/
 					/* don't delete the hash here. 
