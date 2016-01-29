@@ -196,6 +196,7 @@ Cleanup:
 
 /* get the identifying information and add it to the influx flow namespace*/
 /* the unique sequence_number */
+
 void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_connection_info *conn) {
 	struct estats_error* err = NULL;
 	struct estats_connection_tuple_ascii asc;
@@ -216,7 +217,6 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 
 	/* create the flowid */
 	uuid_generate(flow->flowid);
-//	flow->flowid_char = malloc(37); /* length of uuid + null */
 	uuid_unparse(flow->flowid, (char *)flow->flowid_char);
 
 	/* match the IP to appropriate network from the config file */
@@ -244,9 +244,6 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	tag_str_len = strlen(",type=flowdata,netname=,domain=,dtn=,flow= value=")
 		+ strlen (flow->netname) + strlen (flow->domain_name) 
 		+ strlen(options.dtn_id) + strlen (flow->flowid_char) + 1;
-	//length = snprintf(NULL, 0, ",type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=", 
-	//		  flow->netname, flow->domain_name, options.dtn_id, flowid_char);
-	//length++;
 	tag_str = malloc(tag_str_len * sizeof(char) + 1);
 	snprintf(tag_str, tag_str_len, ",type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=", 
 		 flow->netname, flow->domain_name, options.dtn_id, flow->flowid_char);
@@ -278,10 +275,10 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 
 
 	/* add the src_port */
-	size = strlen("src_port\"\"\n") + tag_str_len +strlen(asc.local_port) + 1; 
+	size = strlen("src_port\n") + tag_str_len +strlen(asc.local_port) + 1; 
 	total_size += size;
-	temp_str = malloc(size + 1);
-	snprintf(temp_str, size, "src_port%s%s\n", tag_str, asc.local_port);
+	temp_str = malloc(size + 2);
+	snprintf(temp_str, size, "src_port%s%si\n", tag_str, asc.local_port);
 	temp_str[size-1] = '\0';
 	if (total_size < MAX_LINE_SZ_FLOW) {
 		strncat(influx_data, temp_str, size);
@@ -290,10 +287,10 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	free(temp_str);
 
 	/* add the dest_port */
-	size = strlen("dest_port\"\"\n") + tag_str_len +strlen(asc.rem_addr) + 1; 
+	size = strlen("dest_port\n") + tag_str_len +strlen(asc.rem_addr) + 1; 
 	total_size += size;
-	temp_str = malloc(size + 1);
-	snprintf(temp_str, size, "dest_port%s%s\n", tag_str, asc.rem_port);
+	temp_str = malloc(size + 2);
+	snprintf(temp_str, size, "dest_port%s%si\n", tag_str, asc.rem_port);
 	temp_str[size-1] = '\0';
 	if (total_size < MAX_LINE_SZ_FLOW) {
 		strncat(influx_data, temp_str, size);
@@ -315,11 +312,11 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	free(temp_str);
 
 	/* add the analyzed sereis */
-	size = strlen("analyzed\"\"\n") + tag_str_len +strlen("0") + 1; 
+	size = strlen("analyzed\n") + tag_str_len +strlen("0") + 1; 
 	total_size += size;
-	temp_str = malloc(size + 1);
+	temp_str = malloc(size + 2);
 	temp_str[size-1] = '\0';
-	snprintf(temp_str, size, "analyzed%s\"%s\"\n", tag_str, "0");
+	snprintf(temp_str, size, "analyzed%s0i\n", tag_str);
 	if (total_size < MAX_LINE_SZ_FLOW) {
 		strncat(influx_data, temp_str, size);
 		influx_data[total_size-1] = '\0';
@@ -406,12 +403,12 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 	}
 	
 	/*create the tag string*/
-	length = strlen (",type=flowdata,netname=,domain=,dtn=,flow= value=") 
+	length = strlen (",type=flowdata,netname=,domain=,dtn=,flow= value=i") 
 		+ strlen(time_marker) + strlen (flow->netname) + strlen(flow->domain_name)
 		+ strlen(options.dtn_id) + strlen(flow->flowid_char) + 21; 
 	/* why 21? 19 for the timestamp, 1 for the eol, 1 for the null */
 	influx_data = malloc(length);
-	snprintf(influx_data, length, "%s,type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=%"PRIu64"\n", 
+	snprintf(influx_data, length, "%s,type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=%"PRIu64"i\n", 
 			  time_marker, flow->netname, flow->domain_name, 
 			  options.dtn_id, flow->flowid_char, timestamp);
 	influx_data[length - 1] = '\0';
@@ -492,19 +489,19 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 		int size;
 	       	switch(estats_var_array[i].valtype) {
 		case ESTATS_UNSIGNED32:
-			sprintf(estats_val, " value=%"PRIu32" ", esdata->val[i].uv32);
+			sprintf(estats_val, " value=%"PRIu32"i ", esdata->val[i].uv32);
 			break;
 		case ESTATS_SIGNED32:
-			sprintf(estats_val, " value=%"PRId32" ", esdata->val[i].sv32);
+			sprintf(estats_val, " value=%"PRId32"i ", esdata->val[i].sv32);
 			break;
 		case ESTATS_UNSIGNED64:
-			sprintf(estats_val, " value=%"PRIu64" ", esdata->val[i].uv64);
+			sprintf(estats_val, " value=%"PRIu64"i ", esdata->val[i].uv64);
 			break;
 		case ESTATS_UNSIGNED8:
-			sprintf(estats_val, " value=%"PRIu8" ", esdata->val[i].uv8);
+			sprintf(estats_val, " value=%"PRIu8"i ", esdata->val[i].uv8);
 			break;
 		case ESTATS_UNSIGNED16:
-			sprintf(estats_val, " value=%"PRIu16" ", esdata->val[i].uv16);
+			sprintf(estats_val, " value=%"PRIu16"i ", esdata->val[i].uv16);
 			break;
 		default:
 			break;
@@ -538,12 +535,12 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 	 * for every datapoint in the update series to the same value of 0
 	 */
 
-	update_str_len = strlen("updated,type=flowdata,netname=,domain=,dtn=,flow= value=")
+	update_str_len = strlen("updated,type=flowdata,netname=,domain=,dtn=,flow= value=i")
 		+ strlen (flow->netname) + strlen (flow->domain_name) 
 		+ strlen(options.dtn_id) + strlen (flow->flowid_char) + 19 + 3;
 	/* 19 is the size of the timestamp, 3 is the space, 0 and null */
 	update_str = malloc(update_str_len * sizeof(char) + 1);
-	snprintf(update_str, update_str_len, "updated,type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=%"PRIu64" 0", 
+	snprintf(update_str, update_str_len, "updated,type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=%"PRIu64"i 0", 
 		 flow->netname, flow->domain_name, options.dtn_id, flow->flowid_char, timestamp);
 	update_str[update_str_len-1] = '\0';
 
