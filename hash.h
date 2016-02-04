@@ -17,13 +17,16 @@
 
 #ifndef HASH_H
 #define HASH_H
-#include <uuid/uuid.h>
 #include <stdbool.h>
+#include <openssl/sha.h>
 #include "uthash.h"
 #include "debug.h"
 #include "scripts.h"
 #include "libinflux.h"
 #include "parse.h"
+
+
+#define SHA256_TEXT SHA256_DIGEST_LENGTH * 2
 
 typedef struct ConnectionHash {
 	int cid;            /* connection id from estats*/
@@ -33,8 +36,7 @@ typedef struct ConnectionHash {
 	bool closed;        /* connection state */
 	bool added;         /* already added to db */
 	bool exclude;       /* this flow is filtered out based on the rules if true */
-	uuid_t flowid;      /* unique flow id (uuid) used in database */
-	const char *flowid_char; /* char representation of uuid */
+	const char flowid_char[SHA256_TEXT+1]; /* char representation of sha256 hash*/
 	const char *netname;     /* name of associated network 0 */
 	const char *domain_name; /* name of asscoiated admin domain */
 	influxConn *conn;        /* curl connection handle */

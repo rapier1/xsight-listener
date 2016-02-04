@@ -49,5 +49,6 @@ void add_flow_influx(threadpool, struct ConnectionHash *, struct estats_connecti
 void add_path_trace(threadpool, threadpool, struct ConnectionHash *, struct estats_connection_info *);
 void add_time(threadpool, struct ConnectionHash *, struct estats_nl_client *, int, char *);
 void read_metrics (threadpool, struct ConnectionHash *, struct estats_nl_client *);
-
+uint64_t get_start_time(struct ConnectionHash *, struct estats_nl_client *, int);
+void generate_flow_id (struct ConnectionHash *, struct estats_connection_tuple_ascii, char *);
 #endif

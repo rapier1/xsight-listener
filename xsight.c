@@ -238,7 +238,7 @@ int main(int argc, char *argv[]) {
 	/* we can use mutliple threads for the path tracing feature */
 	tracepool = thpool_init(4);
 
-	/* random seed init for uuid */
+	/* random seed */
 	srand(time(NULL));
 
 	/* set up estats mask to get state information */

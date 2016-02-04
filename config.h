@@ -16,6 +16,9 @@
 /* Define to 1 if you have the <libconfig.h> header file. */
 #define HAVE_LIBCONFIG_H 1
 
+/* Define to 1 if you have the <libssl/sha.h> header file. */
+/* #undef HAVE_LIBSSL_SHA_H */
+
 /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
    to 0 otherwise. */
 #define HAVE_MALLOC 1
@@ -79,9 +82,6 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #define HAVE_UNISTD_H 1
-
-/* Define to 1 if you have the <uuid/uuid.h> header file. */
-#define HAVE_UUID_UUID_H 1
 
 /* Name of package */
 #define PACKAGE "insight"

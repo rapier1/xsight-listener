@@ -15,12 +15,68 @@
  */
 #define _GNU_SOURCE 1
 #include "build_query.h"
+#include "openssl/sha.h"
 
 extern struct Options options;
 extern struct NetworksHash *networks;
 
 void threaded_path_trace(struct PathBuild *);
 void threaded_influx_write (struct ThreadWrite *);
+
+
+/* we need to have a flow identifier that would be unique across
+ * all flows from all hosts at all times. By hashing
+ * srcip, destip, sport, dport, and the start time of the flow
+ * reported as StartTime by web10g, we should be able to create 
+ * a unique and replicable hash for these combinations. Why not just
+ * use a UUID? If the listener restarts than any flows that continue
+ * during the restart process will be given entirely new UUIDs and 
+ * look like new flows. This methods avoids that problem. 
+ * note: We still need to deal with flows that end *during* the time
+ * that the listener is restarting
+ */
+
+void generate_flow_id (struct ConnectionHash *flow, struct estats_connection_tuple_ascii asc, char *flowid) {
+	struct estats_nl_client* cl = { 0 };
+	uint64_t timestamp = 0;
+	struct estats_error* err = NULL;
+	char tempstr[128] = "\0"; /*should handle 2 ipv6, ts, and port information*/
+	char timechar[19];
+	unsigned char hash[SHA256_DIGEST_LENGTH];
+	SHA256_CTX sha256;
+	
+	/* instantiate a new client. */
+	/* may want to change this to use the original client later but 
+	 * for now this should work */
+	Chk(estats_nl_client_init(&cl));
+
+	timestamp = get_start_time(flow, cl, flow->cid);
+	snprintf(timechar, 19, "%"PRIu64"", timestamp);
+	
+	strcat(tempstr, asc.local_addr);
+	strcat(tempstr, asc.rem_addr);
+	strcat(tempstr, asc.local_port);
+	strcat(tempstr, asc.rem_port);
+	strcat(tempstr, timechar);
+
+	SHA256_Init(&sha256);
+	SHA256_Update(&sha256, tempstr, strlen(tempstr));
+	SHA256_Final(hash, &sha256);
+	int i = 0;
+	for(i = 0; i < SHA256_DIGEST_LENGTH; i++)
+	{
+		sprintf(flowid + (i * 2), "%02x", hash[i]);
+	}
+	strcat(flowid, "\0");
+	
+Cleanup:
+        if (err != NULL) {
+                estats_error_free(&err);
+        }
+	estats_nl_client_destroy(&cl);
+}
+
+
 
 /* this is just used to create the job struct 
  *  and call the threaded function 
@@ -43,7 +99,7 @@ void add_path_trace (threadpool curlpool, threadpool tracepool,
 	job->rem_addr = strndup(asc.rem_addr, strlen(asc.rem_addr));
 	job->netname = strndup(flow->netname, strlen(flow->netname)); 
 	job->domain_name = strndup(flow->domain_name, strlen(flow->domain_name));
-	job->flowid_char = strndup(flow->flowid_char, strlen(flow->flowid_char));
+	job->flowid_char = strndup(flow->flowid_char, SHA256_TEXT);
 	job->cid = flow->cid;
 	job->influx_conn = flow->conn;
 	job->mythread = curlpool;
@@ -144,13 +200,12 @@ void threaded_path_trace (struct PathBuild *job) {
 	/*create the tag string*/
 	/* determine the size of the tag string so we can malloc it */
 	size = strlen(",type=flowdata,netname=,domain=,dtn=,flow=") + strlen(job->netname)
-		+ strlen(job->domain_name) + strlen(options.dtn_id) + strlen(job->flowid_char);
-	size++;
-	tag_str = malloc(size * sizeof(char) + 1);
+		+ strlen(job->domain_name) + strlen(options.dtn_id) + SHA256_TEXT + 1;
+	tag_str = malloc(size);
 	snprintf(tag_str, size, ",type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s",
 		 job->netname, job->domain_name, options.dtn_id, job->flowid_char);
 	tag_str[size-1] = '\0';
-	
+
 	/* init the final command string for influx*/
 	/* this is freed in the threaded_influx_write function*/
 	influx_data = malloc(MAX_LINE_SZ_PATH);
@@ -216,8 +271,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	*influx_data = '\0';
 
 	/* create the flowid */
-	uuid_generate(flow->flowid);
-	uuid_unparse(flow->flowid, (char *)flow->flowid_char);
+	generate_flow_id(flow, asc, (char *)flow->flowid_char);
 
 	/* match the IP to appropriate network from the config file */
 	if (!hash_get_tags(&asc, flow)) {
@@ -243,8 +297,8 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	
 	tag_str_len = strlen(",type=flowdata,netname=,domain=,dtn=,flow= value=")
 		+ strlen (flow->netname) + strlen (flow->domain_name) 
-		+ strlen(options.dtn_id) + strlen (flow->flowid_char) + 1;
-	tag_str = malloc(tag_str_len * sizeof(char) + 1);
+		+ strlen(options.dtn_id) + SHA256_TEXT + 1;
+	tag_str = malloc(tag_str_len);
 	snprintf(tag_str, tag_str_len, ",type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=", 
 		 flow->netname, flow->domain_name, options.dtn_id, flow->flowid_char);
 	tag_str[tag_str_len-1] = '\0';
@@ -264,7 +318,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	/* add the dest_ip */
 	size = strlen("dest_ip\"\"\n") + tag_str_len +strlen(asc.rem_addr) + 1; 
 	total_size += size;
-	temp_str = malloc(size + 1);
+	temp_str = malloc(size);
 	snprintf(temp_str, size, "dest_ip%s\"%s\"\n", tag_str, asc.rem_addr);
 	temp_str[size-1] = '\0';
 	if (total_size < MAX_LINE_SZ_FLOW) {
@@ -277,7 +331,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	/* add the src_port */
 	size = strlen("src_port\n") + tag_str_len +strlen(asc.local_port) + 1; 
 	total_size += size;
-	temp_str = malloc(size + 2);
+	temp_str = malloc(size);
 	snprintf(temp_str, size, "src_port%s%si\n", tag_str, asc.local_port);
 	temp_str[size-1] = '\0';
 	if (total_size < MAX_LINE_SZ_FLOW) {
@@ -289,7 +343,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	/* add the dest_port */
 	size = strlen("dest_port\n") + tag_str_len +strlen(asc.rem_addr) + 1; 
 	total_size += size;
-	temp_str = malloc(size + 2);
+	temp_str = malloc(size);
 	snprintf(temp_str, size, "dest_port%s%si\n", tag_str, asc.rem_port);
 	temp_str[size-1] = '\0';
 	if (total_size < MAX_LINE_SZ_FLOW) {
@@ -302,7 +356,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	/* add the command */
 	size = strlen("command\"\"\n") + tag_str_len +strlen(conn->cmdline) + 1; 
 	total_size += size;
-	temp_str = malloc(size + 1);
+	temp_str = malloc(size);
 	temp_str[size-1] = '\0';
 	snprintf(temp_str, size, "command%s\"%s\"\n", tag_str, conn->cmdline);
 	if (total_size < MAX_LINE_SZ_FLOW) {
@@ -314,7 +368,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	/* add the analyzed sereis */
 	size = strlen("analyzed\n") + tag_str_len +strlen("0") + 1; 
 	total_size += size;
-	temp_str = malloc(size + 2);
+	temp_str = malloc(size);
 	temp_str[size-1] = '\0';
 	snprintf(temp_str, size, "analyzed%s0i\n", tag_str);
 	if (total_size < MAX_LINE_SZ_FLOW) {
@@ -322,7 +376,6 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 		influx_data[total_size-1] = '\0';
 	}
 	free(temp_str);
-
 
 	/* note, we'll set the start time when we make the initial instrument read */
         
@@ -347,12 +400,61 @@ Cleanup:
 	}
 }
 
+
+/* this used to be embedded in add_start_time but we need it in multiple places now
+ * we set the mask so that we only get the flow start time and return that. The 
+ * the connection hash is passed only in case of an error for logging purposes
+ */
+uint64_t get_start_time (struct ConnectionHash *flow, struct estats_nl_client *cl, int cid) {
+	uint64_t timestamp = 0;
+	int i;
+	struct estats_mask time_mask;	
+	struct estats_val_data* esdata = NULL;
+	struct estats_error * err = NULL;
+	
+	time_mask.masks[0] = 1UL << 12;/*perf*/
+	time_mask.masks[1] = 0;        /*path*/
+	time_mask.masks[2] = 0;        /*stack*/
+	time_mask.masks[3] = 0;        /*app*/ 
+	time_mask.masks[4] = 0;        /*tune*/ 
+	time_mask.masks[5] = 0;        /*extras*/ 
+	
+	for (i = 0; i < MAX_TABLE; i++) {
+		time_mask.if_mask[i] = 1;
+	}
+	Chk(estats_nl_client_set_mask(cl, &time_mask));
+	Chk(estats_val_data_new(&esdata));
+	Chk(estats_read_vars(esdata, cid, cl));
+	for (i = 0; i < esdata->length; i++) {
+		if (esdata->val[i].masked)
+			continue;		
+		timestamp = esdata->val[i].uv64 * 1000; /*convert to ns*/
+	}
+Cleanup:
+	estats_val_data_free(&esdata);
+	if (err != NULL) {
+		log_error("%s:\t%s\t%s", flow->flowid_char, 
+			  estats_error_get_extra(err), 
+			  estats_error_get_message(err));
+		estats_error_free(&err);
+	}		
+	return timestamp;
+}
+
 void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl_client *cl, int cid, char *time_marker) {
 	struct ThreadWrite *job;
 	uint64_t timestamp = 0;
 	char *influx_data;
 	int length;
+	char *suffix;
 
+	/* for end time we need to override the influx timestamp. we use this variable
+	 *  and we set everything to null so we don't get weird values. 
+	 */
+	char influxts[2];
+	influxts[0] = '\0';
+	influxts[1] = '\0';
+	
 	/* get the curl handle. Do this now so we don't waste time if the handle is null*/
 	if (flow->conn == NULL) {
 		log_error("Can't add time stamp. There is no existing curl connection to the data base for netname %s\n", flow->netname);
@@ -364,58 +466,45 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 	 * kis for this particular flow
 	 */
 	if (cl != NULL) {
-		int i;
-		struct estats_mask time_mask;	
-		struct estats_val_data* esdata = NULL;
-		struct estats_error * err = NULL;
-
-		time_mask.masks[0] = 1UL << 12;/*perf*/
-		time_mask.masks[1] = 0;        /*path*/
-		time_mask.masks[2] = 0;        /*stack*/
-		time_mask.masks[3] = 0;        /*app*/ 
-		time_mask.masks[4] = 0;        /*tune*/ 
-		time_mask.masks[5] = 0;        /*extras*/ 
-		
-		for (i = 0; i < MAX_TABLE; i++) {
-			time_mask.if_mask[i] = 1;
-		}
-		Chk(estats_nl_client_set_mask(cl, &time_mask));
-		Chk(estats_val_data_new(&esdata));
-		Chk(estats_read_vars(esdata, cid, cl));
-		for (i = 0; i < esdata->length; i++) {
-			if (esdata->val[i].masked)
-				continue;		
-			timestamp = esdata->val[i].uv64;
-		}
-	Cleanup:
-		estats_val_data_free(&esdata);
-		if (err != NULL) {
-			log_error("%s:\t%s\t%s", flow->flowid_char, 
-				  estats_error_get_extra(err), 
-				  estats_error_get_message(err));
-			estats_error_free(&err);
-		}		
+		timestamp = get_start_time(flow, cl, cid);
+		/* we ned to create an EndTime entry when the flow is created so we can search
+		 * on it if necessary. We have to give it a 0 influx timestamp so it cvan be updated
+		 * when the flow ends */
+		length = strlen ("EndTime,type=flowdata,netname=,domain=,dtn=,flow= value=0i 0\n") 
+		+ strlen (flow->netname) + strlen(flow->domain_name)
+		+ strlen(options.dtn_id) + SHA256_TEXT + 1; 
+		suffix = malloc (length);
+		snprintf (suffix, length, "EndTime,type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=0i 0\n",
+			  flow->netname, flow->domain_name, options.dtn_id, flow->flowid_char);
 	} else {
 		/* StartTimeStamp is in nanoseconds since epoch so we have to convert
-		 * time() to msecs for the EndTime
+		 * time() to nsecs for the EndTime
 		 */
 		timestamp = time(NULL) * 1000000000;
+		/* in this case we are only writing the EndTime so the suffix is null but the 
+		 * influx timestamp is 0 */
+		influxts[0] = '0';
+		suffix = malloc(1);
+		suffix[0] = '\0';
 	}
 	
 	/*create the tag string*/
-	length = strlen (",type=flowdata,netname=,domain=,dtn=,flow= value=i") 
+	length = strlen (",type=flowdata,netname=,domain=,dtn=,flow= value=i \n") 
 		+ strlen(time_marker) + strlen (flow->netname) + strlen(flow->domain_name)
-		+ strlen(options.dtn_id) + strlen(flow->flowid_char) + 21; 
-	/* why 21? 19 for the timestamp, 1 for the eol, 1 for the null */
+		+ strlen(options.dtn_id) + SHA256_TEXT + 22 + strlen(suffix); 
 	influx_data = malloc(length);
-	snprintf(influx_data, length, "%s,type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=%"PRIu64"i\n", 
+	snprintf(influx_data, length, "%s,type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=%"PRIu64"i %s\n%s", 
 			  time_marker, flow->netname, flow->domain_name, 
-			  options.dtn_id, flow->flowid_char, timestamp);
+		 options.dtn_id, flow->flowid_char, timestamp, influxts, suffix);
 	influx_data[length - 1] = '\0';
+
+	printf("%s", influx_data);
+	
+	free(suffix);
 	
 	job = malloc(sizeof(struct ThreadWrite));
 	job->action = malloc(32);
-	snprintf(job->action, 32, "Added Time: %d", flow->cid);
+	snprintf(job->action, 32, "Added %s: %d", time_marker, flow->cid);
 	job->conn = flow->conn;
 	job->data = &influx_data[0];
 	thpool_add_work(curlpool, (void*)threaded_influx_write, (void*)job);
@@ -465,7 +554,7 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 	/*create the tag string*/
 	tag_str_len = strlen( ",type=metrics,netname=,domain=,dtn=,flow=") 
 		+ strlen(flow->netname) + strlen (flow->domain_name) 
-		+ strlen(options.dtn_id) + strlen (flow->flowid_char) + 1;
+		+ strlen(options.dtn_id) + SHA256_TEXT + 1;
 
 	tag_str = malloc(tag_str_len);
 	snprintf(tag_str, tag_str_len, ",type=metrics,netname=%s,domain=%s,dtn=%s,flow=%s", 
@@ -537,9 +626,9 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 
 	update_str_len = strlen("updated,type=flowdata,netname=,domain=,dtn=,flow= value=i")
 		+ strlen (flow->netname) + strlen (flow->domain_name) 
-		+ strlen(options.dtn_id) + strlen (flow->flowid_char) + 19 + 3;
+		+ strlen(options.dtn_id) + SHA256_TEXT + 19 + 3;
 	/* 19 is the size of the timestamp, 3 is the space, 0 and null */
-	update_str = malloc(update_str_len * sizeof(char) + 1);
+	update_str = malloc(update_str_len);
 	snprintf(update_str, update_str_len, "updated,type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=%"PRIu64"i 0", 
 		 flow->netname, flow->domain_name, options.dtn_id, flow->flowid_char, timestamp);
 	update_str[update_str_len-1] = '\0';

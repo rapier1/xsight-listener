@@ -25,13 +25,13 @@ AC_SEARCH_LIBS([curl_easy_init], [curl], [], [
 AC_SEARCH_LIBS([config_init], [config], [], [
 	echo "libconfig is missing."
         exit -1])
-AC_SEARCH_LIBS([uuid_generate], [uuid], [], [
-	echo "libuuid is missing."
+AC_SEARCH_LIBS([SHA256_Init], [crypto], [], [
+	echo "SHA256 functions not found. Install libssl or make sure SHA256 functions are compiled into library."
         exit -1])
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h inttypes.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/param.h sys/socket.h unistd.h])
-AC_CHECK_HEADERS([uuid/uuid.h estats/estats.h curl/curl.h libconfig.h netdb.h pthreads.h])
+AC_CHECK_HEADERS([libssl/sha.h estats/estats.h curl/curl.h libconfig.h netdb.h pthreads.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
