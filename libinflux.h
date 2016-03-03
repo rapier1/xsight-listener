@@ -6,14 +6,16 @@
 #define libinflux__h
 
 typedef struct {
-    CURL *curl;
-    CURLcode result_code;
-    int (*on_data_ready)(char *); //user-defined callback function. Should return 0 unless error.
-    char *host_url;
-    char *db;
-    char *user;
-    char *pass;
-    int ssl; // 1: ssl enabled & verify peer; 0: insecure ssl - don't verify peer; -1: ssl disabled
+	CURL *curl;
+	CURLcode result_code;
+	int (*on_data_ready)(char *); //user-defined callback function. Should return 0 unless error.
+	char *host_url;
+	char *db;
+	char *user;
+	char *pass;
+	char *response;
+	int response_size;
+	int ssl; // 1: ssl enabled & verify peer; 0: insecure ssl - don't verify peer; -1: ssl disabled
 } influxConn;
 extern void libinflux_init();
 extern void libinflux_cleanup();

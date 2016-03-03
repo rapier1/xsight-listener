@@ -222,7 +222,9 @@ int main(int argc, char *argv[]) {
 		log_error("Unable to open all curl handles. Exiting");
 		goto Cleanup;
 	}
-
+	get_end_time();
+	goto Cleanup;
+	
 	/* we're only using 1 additional thread to take care of the 
 	 * data transfers. We could use more but it gets real complicated
 	 * because in that case each transfer now has to use a new curl connection

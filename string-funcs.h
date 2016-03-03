@@ -24,6 +24,5 @@ char** str_split( char*, char, int*);
 char* strip(char *);
 char* noquotes(char *);
 void join_strings(char **, char** , char* , int);
-void delete_at (char *, int, int);
 
 #endif

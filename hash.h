@@ -59,6 +59,13 @@ typedef struct NetworksHash {
 	UT_hash_handle hh;
 } NetworksHash;
 
+typedef struct DeadFlowHash {
+	int flowkey;
+	char *flow; 
+	NetworksHash *network;
+	UT_hash_handle hh;
+} DeadFlowHash;
+
 influxConn *hash_find_curl_handle(const char *);
 void hash_close_curl_handles();
 int hash_get_tags(struct estats_connection_tuple_ascii *, struct ConnectionHash *);

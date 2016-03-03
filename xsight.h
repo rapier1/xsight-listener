@@ -31,6 +31,7 @@
 #include "parse.h"
 #include "version.h"
 #include "thpool.h"
+#include "dead_flow_check.h"
 
 typedef struct CmdLineCID {
 	int cid;

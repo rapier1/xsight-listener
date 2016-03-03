@@ -105,7 +105,8 @@ PROGRAMS = $(bin_PROGRAMS)
 am_xsight_OBJECTS = xsight.$(OBJEXT) hash.$(OBJEXT) \
 	build_query.$(OBJEXT) options.$(OBJEXT) libinflux.$(OBJEXT) \
 	debug.$(OBJEXT) parse.$(OBJEXT) thpool.$(OBJEXT) \
-	tracer.$(OBJEXT)
+	tracer.$(OBJEXT) dead_flow_check.$(OBJEXT) \
+	string-funcs.$(OBJEXT)
 xsight_OBJECTS = $(am_xsight_OBJECTS)
 xsight_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_$(V))
@@ -272,10 +273,11 @@ target_alias =
 top_build_prefix = 
 top_builddir = .
 top_srcdir = .
-AM_CFLAGS = -O2 -g -Wall -Wextra -std=gnu99 -fgnu89-inline -fno-omit-frame-pointer
-AM_LDFLAGS = -lestats -lcurl -lconfig -lpthread -lcrypto
+AM_CFLAGS = -O2 -g -Wall -Wextra -std=gnu99 -fgnu89-inline -fno-omit-frame-pointer -DXOPEN_SOURCE
+AM_LDFLAGS = -lestats -lcurl -lconfig -lpthread -lcrypto -ljson-c
 xsight_SOURCES = xsight.c hash.c build_query.c options.c libinflux.c \
-		debug.c parse.c thpool.c tracer.c
+		debug.c parse.c thpool.c tracer.c dead_flow_check.c \
+		string-funcs.c
 
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -384,11 +386,13 @@ distclean-compile:
 	-rm -f *.tab.c
 
 include ./$(DEPDIR)/build_query.Po
+include ./$(DEPDIR)/dead_flow_check.Po
 include ./$(DEPDIR)/debug.Po
 include ./$(DEPDIR)/hash.Po
 include ./$(DEPDIR)/libinflux.Po
 include ./$(DEPDIR)/options.Po
 include ./$(DEPDIR)/parse.Po
+include ./$(DEPDIR)/string-funcs.Po
 include ./$(DEPDIR)/thpool.Po
 include ./$(DEPDIR)/tracer.Po
 include ./$(DEPDIR)/xsight.Po

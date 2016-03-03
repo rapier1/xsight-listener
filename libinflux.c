@@ -43,6 +43,7 @@ influxConn* create_conn(char *host, char *database, char *user, char *pass, int 
     newConn->db = strndup(database, strlen(database));
     newConn->user = strndup(user, strlen(user));
     newConn->pass = strndup(pass, strlen(pass));
+    newConn->response = malloc(1); /* not always used but always free'd so need to have something here */
     newConn->ssl = ssl_verify;
 
     //check for https protocol
@@ -70,6 +71,7 @@ void free_conn(influxConn *conn)
     free(conn->db);
     free(conn->user);
     free(conn->pass);
+    free(conn->response);
     free(conn);
 }
 
@@ -162,35 +164,36 @@ void set_debug(bool debug){
  * user-defined callback, influxConn->on_data_ready, if it is defined.
  * Otherwise, it sends the response string to stdout.
  */
-size_t writeCallback(char *contents, size_t size, size_t nmemb, influxConn *conn)
-{
-    char *response;
-    size_t realsize = size * nmemb;
+size_t writeCallback(char *contents, size_t size, size_t nmemb, influxConn *conn){
+	influxConn *inbound = conn;
+	size_t realsize = size * nmemb;
 
-    //allocate memory for new data
-    if((response = malloc(realsize + sizeof(char))) == NULL){
-        fprintf(stderr, "malloc returned NULL");
-        return 0;
-    }
-
-    //copy data from contents to new pointer
-    memcpy(response, contents, realsize);
-    response[nmemb] = '\0'; //null terminate string
-
-    //if user defined a callback
-    if(conn->on_data_ready){
-        //pass response to callback
-        if(conn->on_data_ready(response) != 0){
-            fprintf(stderr, "user callback returned non-zero result");
-        }
-    }else{
-        if(influx_debug){printf("User data callback not defined. Redirecting to stdout.\n");}
-        //otherwise print response to stdout
-        if(response)
-            printf("libinflux: %s\n",response);
-    }
-
-    return realsize;
+	//allocate memory for new data
+	inbound->response = realloc(inbound->response, inbound->response_size + realsize + 1);
+	if (inbound->response == NULL) {
+		fprintf(stderr, "realloc returned NULL");
+		return 0;
+	}
+	
+	//copy data from contents to the response pointer
+	memcpy(&(inbound->response[inbound->response_size]), contents, realsize);
+	inbound->response_size += realsize; // increment size of string
+	inbound->response[inbound->response_size] = '\0'; //null terminate string
+	
+	//if user defined a callback
+	if(conn->on_data_ready){
+		//pass response to callback
+		if(conn->on_data_ready(inbound->response) != 0){
+			fprintf(stderr, "user callback returned non-zero result");
+		}
+	}else{
+		if(influx_debug){printf("User data callback not defined.\n");}
+		//XXXotherwise print response to stdout
+		//if(response)
+		//	printf("libinflux: %s\n",response);
+	}
+	
+	return realsize;
 }
 
 
@@ -285,7 +288,7 @@ CURLcode sendGet(influxConn *conn, char *url, char *data){
         curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, conn);
-        resultCode = curl_easy_perform(curl);
+	resultCode = curl_easy_perform(curl);
     }
     free(url);
     return resultCode;

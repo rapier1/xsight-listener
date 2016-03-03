@@ -404,6 +404,7 @@ Cleanup:
 /* this used to be embedded in add_start_time but we need it in multiple places now
  * we set the mask so that we only get the flow start time and return that. The 
  * the connection hash is passed only in case of an error for logging purposes
+ * NB: All timestamsp in the DB are in ns 
  */
 uint64_t get_start_time (struct ConnectionHash *flow, struct estats_nl_client *cl, int cid) {
 	uint64_t timestamp = 0;
@@ -441,6 +442,17 @@ Cleanup:
 	return timestamp;
 }
 
+/* I know this looks like a kludge. And it is. However, it seems to be faster than 
+ * other methods (strstr on the time_marker etc). 
+ */
+
+/* Add the start and end times of the flows to the database.
+ * StartTime is taken direct from the web10g data and is accurate to the ms
+ * EndTime is only accurate to the second as we only determine if a flow
+ * has ended when we see that it has been closed. We coudl get increased
+ * accuracy by reducing the sleep in the main loop (xsight.c) but I don't know
+ * if that is necessary. Best option would be to extend web10g to capture that data
+ */
 void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl_client *cl, int cid, char *time_marker) {
 	struct ThreadWrite *job;
 	uint64_t timestamp = 0;
@@ -467,7 +479,7 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 	 */
 	if (cl != NULL) {
 		timestamp = get_start_time(flow, cl, cid);
-		/* we ned to create an EndTime entry when the flow is created so we can search
+		/* we need to create an EndTime entry when the flow is created so we can search
 		 * on it if necessary. We have to give it a 0 influx timestamp so it cvan be updated
 		 * when the flow ends */
 		length = strlen ("EndTime,type=flowdata,netname=,domain=,dtn=,flow= value=0i 0\n") 
@@ -497,11 +509,10 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 			  time_marker, flow->netname, flow->domain_name, 
 		 options.dtn_id, flow->flowid_char, timestamp, influxts, suffix);
 	influx_data[length - 1] = '\0';
+	
+	free(suffix); /* no longer needed */
 
-	printf("%s", influx_data);
-	
-	free(suffix);
-	
+	/* create the job struct and send it over to the thread pool*/
 	job = malloc(sizeof(struct ThreadWrite));
 	job->action = malloc(32);
 	snprintf(job->action, 32, "Added %s: %d", time_marker, flow->cid);

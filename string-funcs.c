@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 The Board of Trustees of Carnegie Mellon University.
+ * Copyright (c) 2013 The Board of Trustees of Carnegie Mellon University.
  *
  *  Author: Chris Rapier <rapier@psc.edu>
  *
@@ -23,52 +23,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-
-
-/**
- * Delete a character from the specified position (zero offset)
- *
- * The len parameter allows the function to work with non null terminated
- * strings and could also be considered a weak attempt at buffer overflow
- * protection.
- *
- * @note The original string is modified.
- *
- * @param[in] src   Pointer to string from which to remove the character
- * @param[in] pos   Zero-offset position of the character to remove
- * @param[in] len   Max number of characters to process
- */
-void
-delete_at(char *src, int pos, int len)
-{
-        char *dst;
-        int i;
-
-        if ( pos < 0 )
-                return;
-
-        // Small attempt to control a buffer overflow if the
-        // the string is not null-terminated and a proper length
-        // is not specified.
-        if ( len <= 0 )
-                len = 1024;
-
-        if ( pos >= len )
-                return;
-
-        src += pos;
-        dst = src;
-        src++;
-
-        for ( i = pos + 1; i < len && *src != 0; i++ )
-                *dst++ = *src++;
-
-        // Ensure the string is null-terminated.
-        *dst = 0;
-
-        return;
-}
-// delete_at()
 
 // use this to return the index position of the first appearance of the needle
 // -1 means it does not exist

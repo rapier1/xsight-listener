@@ -127,7 +127,7 @@ configure:3779: checking dependency style of gcc
 configure:3890: result: gcc3
 configure:3908: checking for library containing pthread_create
 configure:3939: gcc -o conftest -g -O2   conftest.c  >&5
-/tmp/ccIllG0M.o: In function `main':
+/tmp/ccV5G9vD.o: In function `main':
 /home/rapier/src/xsight-listener/conftest.c:22: undefined reference to `pthread_create'
 collect2: error: ld returned 1 exit status
 configure:3939: $? = 1
@@ -162,7 +162,7 @@ configure:3939: $? = 0
 configure:3956: result: -lpthread
 configure:3968: checking for library containing estats_read_vars
 configure:3999: gcc -o conftest -g -O2   conftest.c -lpthread  >&5
-/tmp/ccDGjg4R.o: In function `main':
+/tmp/ccQG82mK.o: In function `main':
 /home/rapier/src/xsight-listener/conftest.c:22: undefined reference to `estats_read_vars'
 collect2: error: ld returned 1 exit status
 configure:3999: $? = 1
@@ -197,7 +197,7 @@ configure:3999: $? = 0
 configure:4016: result: -lestats
 configure:4028: checking for library containing curl_easy_init
 configure:4059: gcc -o conftest -g -O2   conftest.c -lestats -lpthread  >&5
-/tmp/ccyOeG2W.o: In function `main':
+/tmp/ccSFDCRU.o: In function `main':
 /home/rapier/src/xsight-listener/conftest.c:22: undefined reference to `curl_easy_init'
 collect2: error: ld returned 1 exit status
 configure:4059: $? = 1
@@ -232,7 +232,7 @@ configure:4059: $? = 0
 configure:4076: result: -lcurl
 configure:4088: checking for library containing config_init
 configure:4119: gcc -o conftest -g -O2   conftest.c -lcurl -lestats -lpthread  >&5
-/tmp/ccdkivG4.o: In function `main':
+/tmp/ccAxe02W.o: In function `main':
 /home/rapier/src/xsight-listener/conftest.c:22: undefined reference to `config_init'
 collect2: error: ld returned 1 exit status
 configure:4119: $? = 1
@@ -267,7 +267,7 @@ configure:4119: $? = 0
 configure:4136: result: -lconfig
 configure:4148: checking for library containing SHA256_Init
 configure:4179: gcc -o conftest -g -O2   conftest.c -lconfig -lcurl -lestats -lpthread  >&5
-/usr/bin/ld: /tmp/ccx4wcnf.o: undefined reference to symbol 'SHA256_Init@@libcrypto.so.10'
+/usr/bin/ld: /tmp/cc2ODbH5.o: undefined reference to symbol 'SHA256_Init@@libcrypto.so.10'
 /usr/lib64/libcrypto.so.10: error adding symbols: DSO missing from command line
 collect2: error: ld returned 1 exit status
 configure:4179: $? = 1
