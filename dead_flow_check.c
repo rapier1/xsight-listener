@@ -137,9 +137,8 @@ void getFlows (json_object *jobj, char *key, int index) {
 			jvalue = json_object_array_get_idx(values, index);
 			/* add to hash*/
 			curr->flow = (char *)strdup(json_object_get_string(jvalue));
-			curr->flowkey = dfh_key_global; /* update the int we are using for the hash key */
 			curr->network = stupid;
-			HASH_ADD_INT(dfhash, flowkey, curr);
+			HASH_ADD_KEYPTR(hh, dfhash, curr->flow, strlen(curr->flow), curr);
 			dfh_key_global++;
 		}
 	}
@@ -315,12 +314,12 @@ void get_current_flows () {
 		for(i = 0; i < SHA256_DIGEST_LENGTH; i++)
 			sprintf(flowid + (i * 2), "%02x", hash[i]);
 
-		//printf ("%s\n", flowid);
+		printf ("%s\n", flowid);
 		HASH_FIND_STR(dfhash, flowid, dfresult);
 		if (dfresult) {
-			//printf ("MATCH\n");
+			printf ("MATCH\n");
 		} else {
-			//printf ("NO MATCH\n");
+			printf ("NO MATCH\n");
 		}
 		free (dfresult);
 	}

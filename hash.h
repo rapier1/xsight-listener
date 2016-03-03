@@ -60,7 +60,6 @@ typedef struct NetworksHash {
 } NetworksHash;
 
 typedef struct DeadFlowHash {
-	int flowkey;
 	char *flow; 
 	NetworksHash *network;
 	UT_hash_handle hh;
