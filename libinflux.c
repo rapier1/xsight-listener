@@ -247,7 +247,7 @@ bool influxCheck(influxConn *conn)
  */
 CURLcode sendPost(influxConn *conn, char *url, char *data){
     CURL *curl = conn->curl;
-    CURLcode resultCode;
+    CURLcode resultCode = {0};
     if(influx_debug){printf("[post]\n");}
     if(curl){
         curl_easy_setopt(curl, CURLOPT_URL, url);
@@ -272,7 +272,7 @@ CURLcode sendPost(influxConn *conn, char *url, char *data){
  */
 CURLcode sendGet(influxConn *conn, char *url, char *data){
     CURL *curl = conn->curl;
-    CURLcode resultCode;
+    CURLcode resultCode = {0};
     if(curl){
         if(data){ //urlencode data
             char *encoded_data = curl_easy_escape(curl, data, strlen(data));

@@ -222,8 +222,6 @@ int main(int argc, char *argv[]) {
 		log_error("Unable to open all curl handles. Exiting");
 		goto Cleanup;
 	}
-	get_end_time();
-	goto Cleanup;
 	
 	/* we're only using 1 additional thread to take care of the 
 	 * data transfers. We could use more but it gets real complicated
@@ -239,6 +237,9 @@ int main(int argc, char *argv[]) {
 	
 	/* we can use mutliple threads for the path tracing feature */
 	tracepool = thpool_init(4);
+
+	get_end_time();
+	//goto Cleanup;
 
 	/* random seed */
 	srand(time(NULL));
