@@ -6,6 +6,7 @@
 #include "string-funcs.h"
 #include "debug.h"
 #include <time.h>
+#include "safe_malloc.h"
 
 void get_end_time();
 int get_flow_ids(char *);

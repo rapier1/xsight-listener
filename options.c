@@ -78,7 +78,7 @@ int options_get_config(char *path, int tmp_debug) {
 	array = config_lookup(&cfg, "exclude_ips");
 	count = config_setting_length(array);
 	if (count) {
-		options.exclude_ips = malloc(sizeof(*options.exclude_ips) * count);
+		options.exclude_ips = SAFEMALLOC(sizeof(*options.exclude_ips) * count);
 		options.ex_ips_count = count;
 	}
 	for (i = 0; i < count; i++) {
@@ -91,7 +91,7 @@ int options_get_config(char *path, int tmp_debug) {
 	array = config_lookup(&cfg, "include_ips");
 	count = config_setting_length(array);
 	if (count) {
-		options.include_ips = malloc(sizeof(*options.include_ips) * count);
+		options.include_ips = SAFEMALLOC(sizeof(*options.include_ips) * count);
 		options.in_ips_count = count;
 	}
 	for (i = 0; i < count; i++) {
@@ -104,7 +104,7 @@ int options_get_config(char *path, int tmp_debug) {
 	array = config_lookup(&cfg, "exclude_apps");
 	count = config_setting_length(array);
 	if (count) {
-		options.exclude_apps = malloc(sizeof(options.exclude_apps) * count);
+		options.exclude_apps = SAFEMALLOC(sizeof(options.exclude_apps) * count);
 		options.ex_apps_count = count;
 	}
 	for (i = 0; i < count; i++) {
@@ -117,7 +117,7 @@ int options_get_config(char *path, int tmp_debug) {
 	array = config_lookup(&cfg, "include_apps");
 	count = config_setting_length(array);
 	if (count) {
-		options.include_apps = malloc(sizeof(options.include_apps) * count);
+		options.include_apps = SAFEMALLOC(sizeof(options.include_apps) * count);
 		options.in_apps_count = count;
 	}
 	for (i = 0; i < count; i++) {
@@ -144,7 +144,7 @@ int options_get_config(char *path, int tmp_debug) {
 		config_setting_t *net_array;
 
 		struct NetworksHash *network = NULL;
-		network = (NetworksHash*)malloc(sizeof(NetworksHash));
+		network = (NetworksHash*)SAFEMALLOC(sizeof(NetworksHash));
 
 		network_name = config_setting_get_string_elem(array, i); /* string now holds the network name */
 
@@ -218,7 +218,7 @@ int options_get_config(char *path, int tmp_debug) {
 		mycount = config_setting_length(net_array);
 		network->net_addrs_count = 0;
 		if (mycount) {
-			network->net_addrs = malloc(sizeof(network->net_addrs) * mycount);
+			network->net_addrs = SAFEMALLOC(sizeof(network->net_addrs) * mycount);
 		        network->net_addrs_count = mycount;
 		}
 		for (j = 0; j < mycount; j++) {

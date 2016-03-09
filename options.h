@@ -24,6 +24,7 @@
 #include "debug.h"
 #include "uthash.h"
 #include "hash.h"
+#include "safe_malloc.h"
 
 extern int debugflag;
 

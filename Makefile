@@ -106,7 +106,7 @@ am_xsight_OBJECTS = xsight.$(OBJEXT) hash.$(OBJEXT) \
 	build_query.$(OBJEXT) options.$(OBJEXT) libinflux.$(OBJEXT) \
 	debug.$(OBJEXT) parse.$(OBJEXT) thpool.$(OBJEXT) \
 	tracer.$(OBJEXT) dead_flow_check.$(OBJEXT) \
-	string-funcs.$(OBJEXT)
+	string-funcs.$(OBJEXT) safe_malloc.$(OBJEXT)
 xsight_OBJECTS = $(am_xsight_OBJECTS)
 xsight_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_$(V))
@@ -277,7 +277,7 @@ AM_CFLAGS = -O2 -g -Wall -Wextra -std=gnu99 -fgnu89-inline -fno-omit-frame-point
 AM_LDFLAGS = -lestats -lcurl -lconfig -lpthread -lcrypto -ljson-c
 xsight_SOURCES = xsight.c hash.c build_query.c options.c libinflux.c \
 		debug.c parse.c thpool.c tracer.c dead_flow_check.c \
-		string-funcs.c
+		string-funcs.c safe_malloc.c
 
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -392,6 +392,7 @@ include ./$(DEPDIR)/hash.Po
 include ./$(DEPDIR)/libinflux.Po
 include ./$(DEPDIR)/options.Po
 include ./$(DEPDIR)/parse.Po
+include ./$(DEPDIR)/safe_malloc.Po
 include ./$(DEPDIR)/string-funcs.Po
 include ./$(DEPDIR)/thpool.Po
 include ./$(DEPDIR)/tracer.Po

@@ -293,6 +293,3 @@ CURLcode sendGet(influxConn *conn, char *url, char *data){
     free(url);
     return resultCode;
 }
-
-
-

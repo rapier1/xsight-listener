@@ -26,9 +26,10 @@
 #include "parse.h"
 #include "thpool.h"
 #include "tracer.h"
+#include "safe_malloc.h"
 
 struct ThreadWrite {
-	char *action;
+	char action[32];
 	influxConn *conn;
 	char *data;
 } ThreadWrite;

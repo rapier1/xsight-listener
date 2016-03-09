@@ -57,6 +57,10 @@ char** str_split( char* str, char delim, int* numSplits )
 		// malloced but not freed! We need to pass a buffer in 
 		// that we can free from the caller. 
 		ret = malloc((retLen + 1) * sizeof(*ret));
+		if (ret == NULL) {
+			fprintf(stderr, "Could not allocate memory in string-funcs.c function str_split\n");
+			exit (1);
+		}
 		ret[retLen] = NULL;
 		
 		c = str;
@@ -91,8 +95,7 @@ char *strip(char *string) {
 	return string;
 }
 
-// strip leading and trailing whitespace                                                                                                                                                                                                                                  
-
+// strip leading and trailing whitespace
 char *noquotes(char *string) {
 	char *start = string;
 	while(*start == '"') start++;
@@ -116,6 +119,10 @@ void join_strings(char **buf, char **strings, char *seperator, int count) {
     total_length += strlen(seperator) * (count - 1); // for seperators
 
     *buf = malloc((total_length+1) * sizeof(char));  /* Allocate memory for joined strings */
+    if (*buf == NULL) {
+	    fprintf (stderr, "Could not allocate memory in string-funcs.c function join_strings\n");
+	    exit (1);
+    }
     *buf[0] = '\0';                      /* Empty string we can append to      */
 
     /* Append all the strings */
@@ -123,6 +130,27 @@ void join_strings(char **buf, char **strings, char *seperator, int count) {
         strcat(*buf, strings[i]);
         if (i < (count - 1)) strcat(*buf, seperator);
     }
-
-//    return str;
 }
+
+/* both of the following function were take from openssl crypto/o_str.c */
+size_t strlcpy(char *dst, const char *src, size_t size)
+{
+    size_t l = 0;
+    for (; size > 1 && *src; size--) {
+        *dst++ = *src++;
+        l++;
+    }
+    if (size)
+        *dst = '\0';
+    return l + strlen(src);
+}
+
+size_t strlcat(char *dst, const char *src, size_t size)
+{
+    size_t l = 0;
+    for (; size > 0 && *dst; size--, dst++)
+        l++;
+    return l + strlcpy(dst, src, size);
+}
+
+

@@ -24,5 +24,8 @@ char** str_split( char*, char, int*);
 char* strip(char *);
 char* noquotes(char *);
 void join_strings(char **, char** , char* , int);
+size_t strlcpy(char *, const char *, size_t);
+size_t strlcat(char *, const char *, size_t);
+	       
 
 #endif

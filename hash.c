@@ -93,7 +93,7 @@ struct ConnectionHash *hash_find_cid(int cid) {
 /* add the new connection to the hash */
 struct ConnectionHash *hash_add_connection (struct estats_connection_info *conn) {
 	struct ConnectionHash *flow = NULL;
-	flow = (ConnectionHash*)malloc(sizeof(ConnectionHash));
+	flow = (ConnectionHash*)SAFEMALLOC(sizeof(ConnectionHash));
 	flow->cid = conn->cid;
 	flow->seen = true;
 	flow->lastpoll = time(NULL);
