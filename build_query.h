@@ -30,7 +30,7 @@
 
 struct ThreadWrite {
 	char action[32];
-	influxConn *conn;
+	NetworksHash *network;
 	char *data;
 } ThreadWrite;
 

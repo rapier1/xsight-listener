@@ -55,7 +55,7 @@ typedef struct NetworksHash {
 	const char *influx_password;
 	const char *influx_user;
 	char **net_addrs;
-	influxConn *conn;
+	influxConn *conn[10];
 	UT_hash_handle hh;
 } NetworksHash;
 
@@ -65,7 +65,7 @@ typedef struct DeadFlowHash {
 	UT_hash_handle hh;
 } DeadFlowHash;
 
-influxConn *hash_find_curl_handle(const char *);
+NetworksHash *hash_find_curl_handle(const char *);
 void hash_close_curl_handles();
 int hash_get_tags(struct estats_connection_tuple_ascii *, struct ConnectionHash *);
 void hash_sort_by_precedence ();

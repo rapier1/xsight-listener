@@ -7,6 +7,7 @@
 
 typedef struct {
 	CURL *curl;
+	int status;
 	CURLcode result_code;
 	int (*on_data_ready)(char *); //user-defined callback function. Should return 0 unless error.
 	char *host_url;

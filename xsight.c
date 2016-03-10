@@ -14,10 +14,12 @@
  *
  */
 #include "xsight.h"
+#include <pthread.h>
 
 int debugflag = 0;
 int daemonize = 0;
 int exitnow = 0;
+pthread_mutex_t lock;
 
 /* global options struct*/
 struct Options options;
@@ -222,7 +224,7 @@ int main(int argc, char *argv[]) {
 		log_error("Unable to open all curl handles. Exiting");
 		goto Cleanup;
 	}
-	
+
 	/* we're only using 1 additional thread to take care of the 
 	 * data transfers. We could use more but it gets real complicated
 	 * because in that case each transfer now has to use a new curl connection
@@ -233,13 +235,18 @@ int main(int argc, char *argv[]) {
 	 * threaded call or before you call it and pass it in the struct. Either
 	 * way it has to be free'd in the threaded call. 
 	 */
-	curlpool = thpool_init(4);
+	curlpool = thpool_init(NUM_THREADS);
 	
 	/* we can use mutliple threads for the path tracing feature */
-	tracepool = thpool_init(4);
+	tracepool = thpool_init(NUM_THREADS);
 
+	if (pthread_mutex_init(&lock, NULL) != 0){
+		log_error("Could not initialize mutex. Exiting\n");
+		exit(1);
+	}
+	log_debug ("Mutex initialized");
+	
 	get_end_time();
-	//goto Cleanup;
 
 	/* random seed */
 	srand(time(NULL));

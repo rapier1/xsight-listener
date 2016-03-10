@@ -33,6 +33,8 @@
 #include "thpool.h"
 #include "dead_flow_check.h"
 
+#define NUM_THREADS 4
+
 typedef struct CmdLineCID {
 	int cid;
 	char cmdline[256];

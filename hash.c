@@ -15,7 +15,7 @@
  */
 
 #include "hash.h"
-
+#include "xsight.h"
 
 extern struct ConnectionHash *activeflows;
 extern struct NetworksHash *networks;
@@ -32,11 +32,8 @@ void hash_add_network(struct NetworksHash *n, int network_id) {
 
 /* find the curl handle associated with the netname 
  * return a pointer to the influxConn struct. 
- * I should have been able to do with with hash_find_str but
- * it failed to match any of the strings. 
- * This works and is likley no more expensive
  */
-influxConn *hash_find_curl_handle(const char *netname) {
+NetworksHash *hash_find_curl_handle(const char *netname) {
 	struct NetworksHash *current, *temp;
 	if (!netname || netname == NULL) 
 		return NULL;
@@ -45,13 +42,15 @@ influxConn *hash_find_curl_handle(const char *netname) {
 		        break;
 		}
 	}
-	return current->conn;
+	return (current);
 }
 
 void hash_close_curl_handles() {
 	struct NetworksHash *current, *temp;
 	HASH_ITER(hh, networks, current, temp) {
-		free_conn(current->conn);
+		int i;
+		for (i = 0; i < NUM_THREADS; i++) 
+			free_conn(current->conn[i]);
 	}
 }
 
@@ -61,23 +60,28 @@ void hash_close_curl_handles() {
  */
 int hash_get_curl_handles () {
 	struct NetworksHash *current, *temp;
-	influxConn *mycurl = NULL;
 	
 	HASH_ITER(hh, networks, current, temp) {
+		int i = 0;
 		/* create the connection */
 
-		mycurl = create_conn ((char *)current->influx_host_url,  
-		 		      (char *)current->influx_database,  
-		 		      (char *)current->influx_user,  
-		 		      (char *)current->influx_password, 
-		 		      current->verify_ssl); 
-		log_debug ("Created connection for %s to %s: %p", current->netname, current->influx_host_url, mycurl);
-
-		current->conn = mycurl; /*current->conn needs *some* value before leaving this function*/
-		if (mycurl == NULL) {
-                        log_error("Could not initiate the curl connection to %s", 
-                                  current->influx_host_url);
-			return -1;
+		for (i = 0; i<NUM_THREADS; i++) {
+			current->conn[i] = create_conn ((char *)current->influx_host_url,  
+							(char *)current->influx_database,  
+							(char *)current->influx_user,  
+							(char *)current->influx_password, 
+							current->verify_ssl); 
+			log_debug ("Created connection %d for %s to %s: %p",
+				   i,
+				   current->netname,
+				   current->influx_host_url,
+				   current->conn[i]);
+			current->conn[i]->status = 1;
+			if (current->conn[i] == NULL) {
+				log_error("Could not initiate the curl connection to %s", 
+					  current->influx_host_url);
+				return -1;
+			}
 		}
 	}
 	return 1;

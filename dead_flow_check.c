@@ -47,9 +47,9 @@ void get_end_time () {
 	 * endtime data from each of them as json objects
 	 */
 	HASH_ITER(hh, networks, current, temp) {
-		global_current_network = current; /* we use this later to tage the flow with the associated network */
+		global_current_network = current; /* we use this later to tag the flow with the associated network */
 		/* get curl handle */
-		mycurl = current->conn;
+		mycurl = current->conn[0];
 		mycurl->response_size = 0;
 		/* build the query */
 		length = snprintf(query, 256,
@@ -357,7 +357,7 @@ void get_current_flows () {
 			/* the flow ids matched so it is active. 
 			 * so delete it from our hash
 			 */
-			log_debug2("Matched orphan flow with existing flow: %s", flowid);
+			log_debug("Matched orphan flow with existing flow: %s", flowid);
 			HASH_DEL(dfhash, dfresult);
 			free (dfresult->flow);
 			free (dfresult);
@@ -405,10 +405,8 @@ void process_dead_flows () {
 		 * I'm not entirely sure why. However, Influx says "Method Not Allowed"
 		 * and that isn't valid json so it just bombs. TODO: Figure out why
 		 */
-		readcurl = currnet->conn;
-		writecurl = create_conn ((char *)currnet->conn->host_url, (char *)currnet->conn->db,
-					 (char *)currnet->conn->user, (char *)currnet->conn->pass,
-					 currnet->conn->ssl);
+		readcurl = currnet->conn[0];
+		writecurl = currnet->conn[1];
 		HASH_ITER(hh, dfhash, currflow, tempflow) {
 			if (currnet != currflow->network)
 				continue;
@@ -441,7 +439,7 @@ void process_dead_flows () {
 				  endtime);
 			query[qlen] = '\0';
 			curl_res = influxWrite(writecurl, query);
-			log_debug2("Closed orphan flow %s", currflow->flow);
+			log_debug("Closed orphan flow %s", currflow->flow);
 			if (curl_res != CURLE_OK)
 				log_error("Curl Failure for %s while updating orphan flows",
 					  curl_easy_strerror(curl_res));
@@ -449,7 +447,6 @@ void process_dead_flows () {
 			free(currflow->flow);
 			free(currflow);
 		}
-		free_conn(writecurl);
 	}
 }
 
