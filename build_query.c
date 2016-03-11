@@ -710,6 +710,7 @@ void threaded_influx_write (struct ThreadWrite *job) {
         log_debug2("%s", job->data);
 	
 Error:
+	free(job->action);
 	free(job->data);
 	free(job);
 }
