@@ -15,14 +15,16 @@
  */
 #define _GNU_SOURCE 1
 #include "build_query.h"
-#include "openssl/sha.h"
+#include <openssl/sha.h>
+#include <pthread.h>
+#include "xsight.h"
 
 extern struct Options options;
 extern struct NetworksHash *networks;
+extern pthread_mutex_t lock;
 
 void threaded_path_trace(struct PathBuild *);
 void threaded_influx_write (struct ThreadWrite *);
-
 
 /* we need to have a flow identifier that would be unique across
  * all flows from all hosts at all times. By hashing
@@ -129,7 +131,6 @@ void threaded_path_trace (struct PathBuild *job) {
 	struct addrinfo *remote_address = 0;
 	struct addrinfo hint;
 	struct ThreadWrite *influxjob;
-	influxConn *curl_conn;
 	char results[32][45]; /* hops are limited to 30 but start at 1 */
 	char *tag_str;
 	char *temp_str;
@@ -144,12 +145,12 @@ void threaded_path_trace (struct PathBuild *job) {
 	memset(results, '\0', 32*45); /*initialize the results array to null */
 
 	/* get the curl handle. Do this now so we don't waste time if the handle is null*/
-	curl_conn = hash_find_curl_handle(job->netname);
-	if (curl_conn == NULL) {
-		log_error("Can't add flow data. There is no existing curl connection to the data base for netname %s\n", 
-			  job->netname);
-		goto Cleanup;
-	}
+	//network = hash_find_curl_handle(job->netname);
+	//if (curl_conn == NULL) {
+	//	log_error("Can't add flow data. There is no existing curl connection to the data base for netname %s\n", 
+	//		  job->netname);
+	//	goto Cleanup;
+	//}
 
 	/* determine if the *source* address is ipv4 or ipv6*/
 	memset(&hint, '\0', sizeof (hint)); 
@@ -230,7 +231,7 @@ void threaded_path_trace (struct PathBuild *job) {
 	influxjob = malloc(sizeof(struct ThreadWrite));
 	influxjob->action = malloc(32);
 	snprintf(influxjob->action, 32, "Added Path: %d", job->cid);
-	influxjob->conn = job->influx_conn;
+	influxjob->network = hash_find_curl_handle(job->netname);
 	influxjob->data = &influx_data[0];
 
 	/* add this to the curl thread pool */
@@ -284,14 +285,6 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	 * this is a problem but we're just ignoring it now
 	 * TODO: Fix this
 	 */
-
-	/* get the curl handle. Do this now so we don't waste time if the handle is null*/
-	flow->conn = hash_find_curl_handle(flow->netname);
-	if (flow->conn == NULL) {
-		log_error("Can't add flow data. There is no existing curl connection to the data base for netname %s\n", 
-			  flow->netname);
-		goto Cleanup;
-	}
 	
 	/*create the tag string*/
 	
@@ -386,7 +379,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	job = malloc(sizeof(struct ThreadWrite));
 	job->action = malloc(32);
 	snprintf(job->action, 32, "Added Flow: %d", conn->cid);
-	job->conn = flow->conn;
+	job->network = hash_find_curl_handle(flow->netname);
 	job->data = &influx_data[0];
 	thpool_add_work(curlpool, (void*)threaded_influx_write, (void*)job);
 	/* NB: job and influx data are free'd in threaded_influx_write */
@@ -467,12 +460,6 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 	influxts[0] = '\0';
 	influxts[1] = '\0';
 	
-	/* get the curl handle. Do this now so we don't waste time if the handle is null*/
-	if (flow->conn == NULL) {
-		log_error("Can't add time stamp. There is no existing curl connection to the data base for netname %s\n", flow->netname);
-		goto End;
-	}
-
 	/* if cl is null then it's an EndTime so we don't need to do this
 	 * if it exists then we need to extract the timestamp from the 
 	 * kis for this particular flow
@@ -516,11 +503,10 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 	job = malloc(sizeof(struct ThreadWrite));
 	job->action = malloc(32);
 	snprintf(job->action, 32, "Added %s: %d", time_marker, flow->cid);
-	job->conn = flow->conn;
+	job->network = hash_find_curl_handle(flow->netname);
 	job->data = &influx_data[0];
 	thpool_add_work(curlpool, (void*)threaded_influx_write, (void*)job);
 	/* NB: job and influx data are free'd in threaded_influx_write */
-End:; /*this is in case the curl handle doesn't exist*/
 }
 
 void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct estats_nl_client *cl) {
@@ -549,12 +535,6 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
         for (i = 0; i < MAX_TABLE; i++) {
                 full_mask.if_mask[i] = 1;
         }
-
-	/* check the curl handle. Do this now so we don't waste time if the handle is null*/
-	if (flow->conn == NULL) {
-		log_error("Can't add metrics. There is no existing curl connection to the data base for netname %s\n", flow->netname);
-		goto End;
-	}
 
 	/* grab the data using the passed client and cid*/
 	Chk(estats_nl_client_set_mask(cl, &full_mask));
@@ -656,7 +636,7 @@ void read_metrics (threadpool curlpool, struct ConnectionHash *flow, struct esta
 	job = malloc(sizeof(struct ThreadWrite));
 	job->action = malloc(32);
 	snprintf(job->action, 32, "Added Metrics: %d", flow->cid);
-	job->conn = flow->conn;
+	job->network = hash_find_curl_handle(flow->netname);
 	job->data = &influx_data[0];
 	thpool_add_work(curlpool, (void*)threaded_influx_write, (void*)job);
 	/* NB: job is free'd in threaded_influx_write */
@@ -669,7 +649,6 @@ Cleanup:
 			  estats_error_get_message(err));
 		estats_error_free(&err);
 	}
-End: ; /*in case there is no curl handle*/
 }
 
 /* this is the function we use to add jobs to the thread pool */
@@ -678,21 +657,59 @@ End: ; /*in case there is no curl handle*/
 void threaded_influx_write (struct ThreadWrite *job) {
 	CURLcode curl_res;
 	influxConn *mycurl = NULL;
+	int i;
 	
-	mycurl = create_conn ((char *)job->conn->host_url, (char *)job->conn->db,
-	 		      (char *)job->conn->user, (char *)job->conn->pass,
-	 		      job->conn->ssl);
- 
+       /* lock this thread while we are looking for a handle from the pool */
+       pthread_mutex_lock(&lock);
+       for (i = 0; i < NUM_THREADS; i++) {
+               if (job->network->conn[i]->status == 1) {
+                       log_debug("Using curl handle %d from %s", i, job->network->netname);
+                       mycurl = job->network->conn[i];
+                       mycurl->status = 0;
+                       break;
+               }
+       }
+       pthread_mutex_unlock(&lock);
+       
+       if (mycurl == NULL) {
+               log_error("Could not get valid curl handle for database write in threaded_influx_write");
+               goto Error;
+       }
+
+	
 	if ((curl_res = influxWrite(mycurl, job->data) != CURLE_OK)) {
-		log_error("CURL failure: %s for %s", curl_easy_strerror(curl_res), job->action);
+		log_error("CURL failure: %s for %s",
+			  curl_easy_strerror(curl_res),
+			  job->action);
+		/* there are times when the curl pool just fails
+		 * so we take the hit and create a unique curl connection
+		 * and try to resend the data. This should happen rarely.
+		 */
+		influxConn *failcurl = NULL;
+		failcurl = create_conn ((char *)job->network->influx_host_url,  
+					(char *)job->network->influx_database,
+					(char *)job->network->influx_user,  
+					(char *)job->network->influx_password, 
+					job->network->verify_ssl); 
+		if ((curl_res = influxWrite(failcurl, job->data) != CURLE_OK)) {
+			log_error("CURL failure recovery failed: %s for %s",
+				  curl_easy_strerror(curl_res),
+				  job->action);
+			free_conn(failcurl);
+			goto Error;
+		} else {
+			log_debug("CURL failure recovery successful: %s\n", job->action);
+			free_conn(failcurl);
+		}
 	} else {
 	 	log_debug("%s", job->action);
 	}
 	
-	free_conn(mycurl);
+	/* we shouldn't need to lock the thread here */
+	mycurl->status = 1;
+        log_debug2("%s", job->data);
 	
-	log_debug2("%s", job->data);
+Error:
 	free(job->data);
-	free(job->action);
 	free(job);
 }

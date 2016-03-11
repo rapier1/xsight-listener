@@ -29,7 +29,7 @@
 
 struct ThreadWrite {
 	char *action;
-	influxConn *conn;
+	NetworksHash *network;
 	char *data;
 } ThreadWrite;
 
