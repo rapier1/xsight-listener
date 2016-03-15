@@ -12,19 +12,16 @@ bool influx_debug = 0;
 /* Set-up and tear-down functions */
 
 
-//Prepares libinflux & cURL - call before any other libinflux functions
+/* Prepares libinflux & cURL - call before any other libinflux functions */
 void libinflux_init()
 {
-    curl_global_init(CURL_GLOBAL_SSL);
-    //Open file pointer used for writing server response.
-    //resOut = fopen("./influx-log", "w+");
+	curl_global_init(CURL_GLOBAL_SSL);
 }
 
-//Cleans up memory used by libinflux & cURL
+/* Cleans up memory used by libinflux & cURL */
 void libinflux_cleanup()
 {
-    curl_global_cleanup();
-    //fclose(resOut);
+	curl_global_cleanup();
 }
 
 
@@ -33,31 +30,31 @@ void libinflux_cleanup()
  */
 influxConn* create_conn(char *host, char *database, char *user, char *pass, int ssl_verify)
 {
-    //create new influxConn structure
-    influxConn *newConn = malloc(sizeof(influxConn));
-
-    //initilize members
-    newConn->curl = curl_easy_init();
-    newConn->on_data_ready = NULL;
-    newConn->host_url = strndup(host, strlen(host));
-    newConn->db = strndup(database, strlen(database));
-    newConn->user = strndup(user, strlen(user));
-    newConn->pass = strndup(pass, strlen(pass));
-    newConn->response = malloc(1); /* not always used but always free'd so need to have something here */
-    newConn->ssl = ssl_verify;
-
-    //check for https protocol
-    if(strstr(newConn->host_url, "https://")){
-        //enable SSL
-        curl_easy_setopt(newConn->curl, CURLOPT_USE_SSL, CURLUSESSL_ALL);
-        //set ssl peer verification on/off
-        curl_easy_setopt(newConn->curl, CURLOPT_SSL_VERIFYPEER, newConn->ssl);
-    }else{
-        //disable ssl
-        newConn->ssl = -1;
-    }
-
-    return newConn;
+	/* create new influxConn structure */
+	influxConn *newConn = malloc(sizeof(influxConn));
+	
+	/* initilize members */
+	newConn->curl = curl_easy_init();
+	newConn->on_data_ready = NULL;
+	newConn->host_url = strndup(host, strlen(host));
+	newConn->db = strndup(database, strlen(database));
+	newConn->user = strndup(user, strlen(user));
+	newConn->pass = strndup(pass, strlen(pass));
+	newConn->response = malloc(1); /* not always used but always free'd so need to have something here */
+	newConn->ssl = ssl_verify;
+	
+	/* check for https protocol */
+	if(strstr(newConn->host_url, "https://")){
+		/* enable SSL */
+		curl_easy_setopt(newConn->curl, CURLOPT_USE_SSL, CURLUSESSL_ALL);
+		/* set ssl peer verification on/off */
+		curl_easy_setopt(newConn->curl, CURLOPT_SSL_VERIFYPEER, newConn->ssl);
+	}else{
+		/* disable ssl */
+		newConn->ssl = -1;
+	}
+	
+	return newConn;
 }
 
 /* Frees the influxConn structure that is passed in.
@@ -66,13 +63,13 @@ influxConn* create_conn(char *host, char *database, char *user, char *pass, int 
  */
 void free_conn(influxConn *conn)
 {
-    curl_easy_cleanup(conn->curl);
-    free(conn->host_url);
-    free(conn->db);
-    free(conn->user);
-    free(conn->pass);
-    free(conn->response);
-    free(conn);
+	curl_easy_cleanup(conn->curl);
+	free(conn->host_url);
+	free(conn->db);
+	free(conn->user);
+	free(conn->pass);
+	free(conn->response);
+	free(conn);
 }
 
 /* Allows the user to pass in a function to handle server response when it is
@@ -81,7 +78,7 @@ void free_conn(influxConn *conn)
  */
 void set_callback(influxConn *conn, int (*callback)(char*))
 {
-    conn->on_data_ready = callback;
+	conn->on_data_ready = callback;
 }
 
 /* Internal utility functions  */
@@ -92,71 +89,71 @@ void set_callback(influxConn *conn, int (*callback)(char*))
  */
 void update_ssl_opts(influxConn *conn)
 {
-    if(conn->ssl == 0 || conn->ssl == 1){ //if ssl is enabled
-        //enable SSL
-        curl_easy_setopt(conn->curl, CURLOPT_USE_SSL, CURLUSESSL_ALL);
-        //set ssl peer verification on/off
-        curl_easy_setopt(conn->curl, CURLOPT_SSL_VERIFYPEER, conn->ssl);
-    }
+	if(conn->ssl == 0 || conn->ssl == 1){ /* if ssl is enabled */
+		/* enable SSL */
+		curl_easy_setopt(conn->curl, CURLOPT_USE_SSL, CURLUSESSL_ALL);
+		/* set ssl peer verification on/off */
+		curl_easy_setopt(conn->curl, CURLOPT_SSL_VERIFYPEER, conn->ssl);
+	}
 }
 
 char* build_write_url(influxConn *conn)
 {
-    char endpoint[] = "write?";
-
-    //allocate space for parameterized url
-    size_t size = sizeof(char *) * ( (int)strlen(conn->host_url)
-                + (int)strlen(endpoint) 
-                + (int)strlen(conn->db)+3 
-                + (int)strlen(conn->user)+3 
-                + (int)strlen(conn->pass)+3 + 1);
-    char *url = malloc(size);
-
-    //concatenate endpoint and parameters to host_url
-    if(url){
-        snprintf(url, size, "%s%sdb=%s&u=%s&p=%s", conn->host_url, endpoint, 
-            conn->db, conn->user, conn->pass);
-    }
-
-    return url;
+	char endpoint[] = "write?";
+	
+	/* allocate space for parameterized url */
+	size_t size = sizeof(char *) * ( (int)strlen(conn->host_url)
+					 + (int)strlen(endpoint) 
+					 + (int)strlen(conn->db)+3 
+					 + (int)strlen(conn->user)+3 
+					 + (int)strlen(conn->pass)+3 + 1);
+	char *url = malloc(size);
+	
+	/* concatenate endpoint and parameters to host_url */
+	if(url){
+		snprintf(url, size, "%s%sdb=%s&u=%s&p=%s", conn->host_url, endpoint, 
+			 conn->db, conn->user, conn->pass);
+	}
+	
+	return url;
 }
 
 char* build_query_url(influxConn *conn)
 {
-    char endpoint[] = "query?";
-
-    //allocate space for parameterized url
-    size_t size = sizeof(char *) * ( (int)strlen(conn->host_url)
-                + (int)strlen(endpoint)             // warning - magic numbers 
-                + (int)strlen(conn->db)+3           // 'db=' 
-                + (int)strlen(conn->user)+3         // '&u='
-                + (int)strlen(conn->pass)+3 +3 + 1);// '&p=', '&q='
-    char *url = malloc(size);
-
-    //concatenate endpoint and parameters to host_url
-    if(url){
-        snprintf(url, size, "%s%sdb=%s&u=%s&p=%s&q=", conn->host_url, endpoint, 
-            conn->db, conn->user, conn->pass);
-    }
-
-    return url;
+	char endpoint[] = "query?";
+	
+	/*allocate space for parameterized url*/
+	size_t size = sizeof(char *) * ( (int)strlen(conn->host_url)
+					 + (int)strlen(endpoint)             /* warning - magic numbers */
+					 + (int)strlen(conn->db)+3           /* 'db=' */
+					 + (int)strlen(conn->user)+3         /* '&u=' */
+					 + (int)strlen(conn->pass)+3 +3 + 1);/* '&p=', '&q=' */
+	char *url = malloc(size);
+	
+	/*concatenate endpoint and parameters to host_url*/
+	if(url){
+		snprintf(url, size, "%s%sdb=%s&u=%s&p=%s&q=", conn->host_url, endpoint, 
+			 conn->db, conn->user, conn->pass);
+	}
+	
+	return url;
 }
 
-//setter functions for influxConn struct
+/* setter functions for influxConn struct */
 void set_host_url(influxConn *conn, char *url){
-    conn->host_url = strdup(url);
+	conn->host_url = strdup(url);
 }
 void set_database(influxConn *conn, char *database){
-    conn->db = strdup(database);
+	conn->db = strdup(database);
 }
 void set_user(influxConn *conn, char *pass){
-    conn->user = strdup(pass);
+	conn->user = strdup(pass);
 }
 void set_pass(influxConn *conn, char *pass){
-    conn->pass = strdup(pass);
+	conn->pass = strdup(pass);
 }
 void set_debug(bool debug){
-    influx_debug = debug;
+	influx_debug = debug;
 }
 
 /* Function that handles cURL's write callback. It allocates a new string 
@@ -167,30 +164,27 @@ void set_debug(bool debug){
 size_t writeCallback(char *contents, size_t size, size_t nmemb, influxConn *conn){
 	influxConn *inbound = conn;
 	size_t realsize = size * nmemb;
-
-	//allocate memory for new data
+	
+	/*allocate memory for new data */
 	inbound->response = realloc(inbound->response, inbound->response_size + realsize + 1);
 	if (inbound->response == NULL) {
 		fprintf(stderr, "realloc returned NULL");
 		return 0;
 	}
 	
-	//copy data from contents to the response pointer
+	/*copy data from contents to the response pointer */
 	memcpy(&(inbound->response[inbound->response_size]), contents, realsize);
-	inbound->response_size += realsize; // increment size of string
-	inbound->response[inbound->response_size] = '\0'; //null terminate string
+	inbound->response_size += realsize; /* increment size of string */
+	inbound->response[inbound->response_size] = '\0'; /* null terminate string */
 	
-	//if user defined a callback
+	/*if user defined a callback */
 	if(conn->on_data_ready){
-		//pass response to callback
+		/*pass response to callback */
 		if(conn->on_data_ready(inbound->response) != 0){
 			fprintf(stderr, "user callback returned non-zero result");
 		}
 	}else{
 		if(influx_debug){printf("User data callback not defined.\n");}
-		//XXXotherwise print response to stdout
-		//if(response)
-		//	printf("libinflux: %s\n",response);
 	}
 	
 	return realsize;
@@ -205,13 +199,13 @@ size_t writeCallback(char *contents, size_t size, size_t nmemb, influxConn *conn
  * Returns a CURLcode that is globally stored in influxConn->result_code 
  */
 CURLcode influxQuery(influxConn *conn, char *query){
-    char *url = build_query_url(conn); //freed in sendGet()
-   
-    if(influx_debug){printf("[q: %s]\n", url);}
-    
-    update_ssl_opts(conn);
-    conn->result_code = sendGet(conn, url, query);
-    return conn->result_code;
+	char *url = build_query_url(conn); /* freed in sendGet() */
+	
+	if(influx_debug){printf("[q: %s]\n", url);}
+	
+	update_ssl_opts(conn);
+	conn->result_code = sendGet(conn, url, query);
+	return conn->result_code;
 }
 
 /* Writes the JSON object, *data, to the database represented by *service_url.
@@ -219,13 +213,13 @@ CURLcode influxQuery(influxConn *conn, char *query){
  * Returns a CURLcode that is stored in influxConn->result_code
  */
 CURLcode influxWrite(influxConn *conn, char *data){
-    char *url = build_write_url(conn); //freed in sendPost()
-
-    if(influx_debug){printf("[w: %s]\n", url);}
-
-    update_ssl_opts(conn);
-    conn->result_code = sendPost(conn, url, data);
-    return conn->result_code; 
+	char *url = build_write_url(conn); /* freed in sendPost() */
+	
+	if(influx_debug){printf("[w: %s]\n", url);}
+	
+	update_ssl_opts(conn);
+	conn->result_code = sendPost(conn, url, data);
+	return conn->result_code; 
 }
 
 /* Tests an influxDB connection with a GET request.
@@ -233,9 +227,9 @@ CURLcode influxWrite(influxConn *conn, char *data){
  */
 bool influxCheck(influxConn *conn)
 {
-    update_ssl_opts(conn);
-    conn->result_code = sendGet(conn, conn->host_url, NULL);
-    return conn->result_code;
+	update_ssl_opts(conn);
+	conn->result_code = sendGet(conn, conn->host_url, NULL);
+	return conn->result_code;
 }
 
 
@@ -274,25 +268,22 @@ CURLcode sendGet(influxConn *conn, char *url, char *data){
     CURL *curl = conn->curl;
     CURLcode resultCode = {0};
     if(curl){
-        if(data){ //urlencode data
-            char *encoded_data = curl_easy_escape(curl, data, strlen(data));
-            url = realloc(url, sizeof(char *) * ((int) strlen(url) + strlen(encoded_data) + 1) );
-            if(url){
-                strncat(url, encoded_data, strlen(encoded_data));
-                curl_free(encoded_data);
-            }
-        }
-
-        if(influx_debug){printf("[q: %s]\n", url);}
-        
-        curl_easy_setopt(curl, CURLOPT_URL, url);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, conn);
-	resultCode = curl_easy_perform(curl);
+	    if(data){ /* urlencode data */
+		    char *encoded_data = curl_easy_escape(curl, data, strlen(data));
+		    url = realloc(url, sizeof(char *) * ((int) strlen(url) + strlen(encoded_data) + 1) );
+		    if(url){
+			    strncat(url, encoded_data, strlen(encoded_data));
+			    curl_free(encoded_data);
+		    }
+	    }
+	    
+	    if(influx_debug){printf("[q: %s]\n", url);}
+	    
+	    curl_easy_setopt(curl, CURLOPT_URL, url);
+	    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
+	    curl_easy_setopt(curl, CURLOPT_WRITEDATA, conn);
+	    resultCode = curl_easy_perform(curl);
     }
     free(url);
     return resultCode;
 }
-
-
-
