@@ -122,7 +122,7 @@ am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
 am__v_at_0 = @
 am__v_at_1 = 
 DEFAULT_INCLUDES = -I.
-depcomp = $(SHELL) $(top_srcdir)/depcomp
+depcomp = $(SHELL) $(top_srcdir)/../../depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -166,9 +166,10 @@ ETAGS = etags
 CTAGS = ctags
 CSCOPE = cscope
 AM_RECURSIVE_TARGETS = cscope
-am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/config.h.in AUTHORS \
-	COPYING ChangeLog INSTALL NEWS README compile depcomp \
-	install-sh missing
+am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/config.h.in \
+	$(top_srcdir)/../../compile $(top_srcdir)/../../depcomp \
+	$(top_srcdir)/../../install-sh $(top_srcdir)/../../missing \
+	AUTHORS COPYING ChangeLog INSTALL NEWS README
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -231,10 +232,10 @@ SET_MAKE =
 SHELL = /bin/sh
 STRIP = 
 VERSION = 0.1
-abs_builddir = /home/rapier/src/xsight-listener
-abs_srcdir = /home/rapier/src/xsight-listener
-abs_top_builddir = /home/rapier/src/xsight-listener
-abs_top_srcdir = /home/rapier/src/xsight-listener
+abs_builddir = /home/rapier/src/xsight-listener/test/xsight-listener
+abs_srcdir = /home/rapier/src/xsight-listener/test/xsight-listener
+abs_top_builddir = /home/rapier/src/xsight-listener/test/xsight-listener
+abs_top_srcdir = /home/rapier/src/xsight-listener/test/xsight-listener
 ac_ct_CC = gcc
 am__include = include
 am__leading_dot = .

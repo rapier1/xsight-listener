@@ -24,7 +24,7 @@
 #include "scripts.h"
 #include "libinflux.h"
 #include "parse.h"
-#include "safe_malloc.h"
+
 
 #define SHA256_TEXT SHA256_DIGEST_LENGTH * 2
 

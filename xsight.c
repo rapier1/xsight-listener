@@ -388,10 +388,6 @@ int main(int argc, char *argv[]) {
  Cleanup:
 	estats_nl_client_destroy(&cl);
 
-	/* destroy the threadpools*/
-	thpool_destroy(curlpool);
-	thpool_destroy(tracepool);
-
 	/* close the rest connection*/
 	hash_close_curl_handles();
 	libinflux_cleanup();
@@ -411,5 +407,11 @@ int main(int argc, char *argv[]) {
 	if (daemonize)
 		closelog();
 
+	/* destroy the threadpools
+	 * we do this last as the 
+	 * closing process sometimes gets hung */
+	thpool_destroy(curlpool);
+	thpool_destroy(tracepool);
+	
 	return EXIT_SUCCESS;
 }

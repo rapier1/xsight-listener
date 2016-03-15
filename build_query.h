@@ -26,10 +26,9 @@
 #include "parse.h"
 #include "thpool.h"
 #include "tracer.h"
-#include "safe_malloc.h"
 
 struct ThreadWrite {
-	char action[32];
+	char *action;
 	NetworksHash *network;
 	char *data;
 } ThreadWrite;

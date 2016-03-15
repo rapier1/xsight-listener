@@ -15,6 +15,7 @@
  */
 
 #include "options.h"
+#include "safe_malloc.h"
 
 extern struct Options options;
 extern struct Networks *networks;
@@ -33,7 +34,8 @@ int options_get_config(char *path, int tmp_debug) {
 	/*read config file*/
 	if (!config_read_file(&cfg, path)) {
 		log_error("%s:%d - %s (bad path or syntax error in config file?)", 
-			  config_error_file(&cfg), config_error_line(&cfg), 
+			  config_error_file(&cfg),
+			  config_error_line(&cfg), 
 			  config_error_text(&cfg));
 		return -1;
 	}
@@ -50,7 +52,8 @@ int options_get_config(char *path, int tmp_debug) {
 		/* lets the user override the debig level from the command line */
 		if (tmp_debug != -1)
 			debugflag = tmp_debug;
-		log_debug("Debug flag: %d", debugflag);
+		log_debug("Debug flag: %d",
+			  debugflag);
 	}
 
 	if (!config_lookup_string(&cfg, "dtn_id", &string)) {
@@ -65,14 +68,16 @@ int options_get_config(char *path, int tmp_debug) {
 		return -1;
 	}
 	options.conn_interval = value;
-	log_debug("Connection Poll Interval : %d(s)", options.conn_interval);
+	log_debug("Connection Poll Interval : %d(s)",
+		  options.conn_interval);
 
 	if (!config_lookup_int(&cfg, "metric_poll_interval", &value)) {
 		log_error("Metric polling interval not specified in config file! Exiting.");
 		return -1;
 	}
 	options.metric_interval = value;
-	log_debug("Metric Poll Interval : %d(s)", options.metric_interval);
+	log_debug("Metric Poll Interval : %d(s)",
+		  options.metric_interval);
 
 	/* get any excluded ip addresses */
 	array = config_lookup(&cfg, "exclude_ips");
@@ -84,7 +89,8 @@ int options_get_config(char *path, int tmp_debug) {
 	for (i = 0; i < count; i++) {
 		string = config_setting_get_string_elem(array, i);
 		options.exclude_ips[i] = strdup(string);
-		log_debug("Excluded IP: %s", options.exclude_ips[i]);
+		log_debug("Excluded IP: %s",
+			  options.exclude_ips[i]);
 	}
 
 	/* get any included ip addresses */
@@ -97,7 +103,8 @@ int options_get_config(char *path, int tmp_debug) {
 	for (i = 0; i < count; i++) {
 		string = config_setting_get_string_elem(array, i);
 		options.include_ips[i] = strdup(string);
-		log_debug("Included IP: %s", options.include_ips[i]);
+		log_debug("Included IP: %s",
+			  options.include_ips[i]);
 	}
 
 	/* get any excluded apps */
@@ -110,7 +117,8 @@ int options_get_config(char *path, int tmp_debug) {
 	for (i = 0; i < count; i++) {
 		string = config_setting_get_string_elem(array, i);
 		options.exclude_apps[i] = strdup(string);
-		log_debug("Excluded application: %s", options.exclude_apps[i]);
+		log_debug("Excluded application: %s",
+			  options.exclude_apps[i]);
 	}
 
 	/* get any included apps */
@@ -123,7 +131,8 @@ int options_get_config(char *path, int tmp_debug) {
 	for (i = 0; i < count; i++) {
 		string = config_setting_get_string_elem(array, i);
 		options.include_apps[i] = strdup(string);
-		log_debug("Included application: %s", options.include_apps[i]);
+		log_debug("Included application: %s",
+			  options.include_apps[i]);
 	}
 
 	array = config_lookup(&cfg, "network_names");
@@ -133,7 +142,8 @@ int options_get_config(char *path, int tmp_debug) {
 		return -1;
 	}
 	options.network_count = count;
-	log_debug("Monitored networks in 'networks' stanza: %d\n", count);
+	log_debug("Monitored networks in 'networks' stanza: %d\n",
+		  count);
 	/* add the information to the hash */
 	for (i = 0; i < count; i++) {
 		int j = 0;
@@ -155,28 +165,32 @@ int options_get_config(char *path, int tmp_debug) {
 		sprintf (search_str, "networks.%s.netname", network_name);
 
 		if (!config_setting_lookup_string(net_child, "netname", &string)) { 
-			log_error("Monitored network %s's netname not specified in config file! Exiting.", network_name);
+			log_error("Monitored network %s's netname not specified in config file! Exiting.",
+				  network_name);
 			return -1;
 		}
 		log_debug("Network: %s, netname: %s", network_name, string);
 		network->netname = strdup(string);
 
 		if (!config_setting_lookup_string(net_child, "domain", &string)) {
-			log_error("Monitored network %s's domain not specified in config file! Exiting.", network_name);
+			log_error("Monitored network %s's domain not specified in config file! Exiting.",
+				  network_name);
 			return -1;
 		}
 		log_debug("Network: %s, domain_name: %s", network_name, string);
 		network->domain_name = strdup(string);
 
 		if (!config_setting_lookup_string(net_child, "host_url", &string)) {
-			log_error("Monitored network %s's hosturl not specified in config file! Exiting.", network_name);
+			log_error("Monitored network %s's hosturl not specified in config file! Exiting.",
+				  network_name);
 			return -1;
 		}
 		log_debug("Network: %s, host_url: %s", network_name, string);
 		network->influx_host_url = strdup(string);
 
 		if (!config_setting_lookup_string(net_child, "verify_ssl", &string)) {
-			log_error("Verification of %s SSL cert not specified in config! Defaulting to 1", network_name);
+			log_error("Verification of %s SSL cert not specified in config! Defaulting to 1",
+				  network_name);
 			network->verify_ssl = 1;
 		} else {
 			if (atoi(string) > 0) 
@@ -187,31 +201,38 @@ int options_get_config(char *path, int tmp_debug) {
 		log_debug("Verify SSL certificate on %s: %d", network->influx_host_url, network->verify_ssl);
 
 		if (!config_setting_lookup_string(net_child, "database", &string)) {
-			log_error("Monitored network %s's database not specified in config file! Exiting.", network_name);
+			log_error("Monitored network %s's database not specified in config file! Exiting.",
+				  network_name);
 			return -1;
 		}
 		log_debug("Network: %s, database: %s", network_name, string);
 		network->influx_database = strdup(string);
 
 		if (!config_setting_lookup_string(net_child, "db_user", &string)) {
-			log_error("Monitored network %s's database user not specified in config file! Exiting.", network_name);
+			log_error("Monitored network %s's database user not specified in config file! Exiting.",
+				  network_name);
 			return -1;
 		}
 		log_debug("Network: %s, db_user: %s", network_name, string);
 		network->influx_user = strdup(string);
 
 		if (!config_setting_lookup_string(net_child, "password", &string)) {
-			log_error("Monitored network %s's database password not specified in config file! Exiting.", network_name);
+			log_error("Monitored network %s's database password not specified in config file! Exiting.",
+				  network_name);
 			return -1;
 		}
-		log_debug("Network: %s, password: %s", network_name, string);
+		log_debug("Network: %s, password: %s",
+			  network_name,
+			  string);
 		network->influx_password = strdup(string);
 
 		if (!config_setting_lookup_int(net_child, "order", &order)) {
 			network->precedence = i;
 		}
 
-		log_debug("Network: %s, precedence: %d", network_name, order);
+		log_debug("Network: %s, precedence: %d",
+			  network_name,
+			  order);
 		network->precedence = order;
 
 		net_array = config_setting_get_member(net_child, "networks");
@@ -224,7 +245,9 @@ int options_get_config(char *path, int tmp_debug) {
 		for (j = 0; j < mycount; j++) {
 			string = config_setting_get_string_elem(net_array, j);
 			network->net_addrs[j] = strdup(string);
-			log_debug("%s: Added network : %s", network_name, network->net_addrs[j]);
+			log_debug("%s: Added network : %s",
+				  network_name,
+				  network->net_addrs[j]);
 		}
 		hash_add_network(network, i);
 	}

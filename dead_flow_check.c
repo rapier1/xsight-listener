@@ -16,6 +16,7 @@
  */
 
 #include "dead_flow_check.h"
+#include "safe_malloc.h"
 
 extern struct NetworksHash *networks;
 extern struct Options options;
@@ -40,8 +41,7 @@ void get_end_time () {
 	CURLcode curl_res;
 	influxConn *mycurl = NULL;
 	json_object *json_in = NULL;
-	char query[256];
-	int length;
+	char query[512];
 
 	/* iterate over the open curl handles and fetch 
 	 * endtime data from each of them as json objects
@@ -51,14 +51,13 @@ void get_end_time () {
 		/* get curl handle */
 		mycurl = current->conn[0];
 		mycurl->response_size = 0;
+		
 		/* build the query */
-		length = snprintf(query, 256,
+		snprintf(query, 512,
 			 "SELECT flow,value FROM EndTime WHERE dtn='%s' and domain='%s' and netname='%s' and value=0",
 			 options.dtn_id,
 			 current->domain_name,
 			 current->netname);
-		query[length] = '\0';
-		log_debug2("Orphan flow query: %s", query);
 		curl_res = influxQuery(mycurl, query);
 		/* if this fails go to the next connection but don't fail. */
 		if (curl_res != CURLE_OK) {
@@ -106,7 +105,7 @@ int build_json_object ( char *response, json_object **json_in) {
 	
         if ((int)(tok->char_offset) < (int)(strlen(response))) /* shouldn't access internal fields */
         {
-                /* this is when we get characters appended to the end of the json object */
+		/* this is when we get characters appended to the end of the json object */
 		fprintf(stderr, "Poorly formed JSON object. Check for extraneous characters.");
 		json_tokener_free(tok);
                 return 0;
@@ -136,7 +135,6 @@ void getFlows (json_object *jobj, int index) {
 			jvalue = json_object_array_get_idx(values, index);
 			/* add to hash*/
 			curr->flow = (char *)strdup(json_object_get_string(jvalue));
-			log_debug2("Found orphan flow: %s", curr->flow);
 			/* we do this so we can match the flow to a specific network connection */
 			curr->network = global_current_network;
 			HASH_ADD_KEYPTR(hh, dfhash, curr->flow, strlen(curr->flow), curr);
@@ -391,7 +389,7 @@ void process_dead_flows () {
 	DeadFlowHash *currflow, *tempflow;
 	NetworksHash *currnet, *tempnet;
 	influxConn *readcurl, *writecurl;
-	char query[256];
+	char query[512];
 	int qlen;
 	CURLcode curl_res;
 	json_object *json_in = NULL;
@@ -410,9 +408,9 @@ void process_dead_flows () {
 		HASH_ITER(hh, dfhash, currflow, tempflow) {
 			if (currnet != currflow->network)
 				continue;
-			qlen = snprintf(query, 256,
-				 "SELECT time, value FROM SegsIn WHERE flow ='%s' ORDER BY DESC LIMIT 1",
-				 currflow->flow);
+			qlen = snprintf(query, 512,
+					"SELECT time, value FROM SegsIn WHERE flow ='%s' ORDER BY DESC LIMIT 1",
+					currflow->flow);
 			query[qlen] = '\0';
 			readcurl->response_size = 0;
 			curl_res = influxQuery(readcurl, query);
@@ -425,13 +423,15 @@ void process_dead_flows () {
 			}
 			endtime = parse_flows_json(json_in, 0) * 1000000000;
 			if (endtime == 0) {
+				/* TODO: instead of skipping we should just insert the 
+				 * current time. Not ideal but better than leaving it as 0 */
 				fprintf(stderr, "Invalid endtime value. Skipping\n");
 				continue;
 			}
 			json_object_put(json_in); /*free the json object*/
 			
-			qlen = snprintf (query, 256,
-					 "EndTime,type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=%lui 0",
+			qlen = snprintf (query, 512,
+				  "EndTime,type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=%lui 0",
 				  currnet->netname,
 				  currnet->domain_name,
 				  options.dtn_id,
@@ -439,10 +439,11 @@ void process_dead_flows () {
 				  endtime);
 			query[qlen] = '\0';
 			curl_res = influxWrite(writecurl, query);
-			log_debug("Closed orphan flow %s", currflow->flow);
 			if (curl_res != CURLE_OK)
 				log_error("Curl Failure for %s while updating orphan flows",
 					  curl_easy_strerror(curl_res));
+			else
+				log_debug("Closed orphan flow %s", currflow->flow);
 			HASH_DEL(dfhash, currflow);
 			free(currflow->flow);
 			free(currflow);
