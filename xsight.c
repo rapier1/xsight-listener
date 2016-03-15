@@ -205,6 +205,8 @@ int main(int argc, char *argv[]) {
 		close(STDIN_FILENO);
 		close(STDOUT_FILENO);
 		close(STDERR_FILENO);		
+		openlog(NULL, LOG_PID, LOG_USER);
+		syslog(LOG_INFO, "Starting xsight listener in daemon mode");
 	}	
 
 
