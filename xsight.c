@@ -149,9 +149,10 @@ int main(int argc, char *argv[]) {
 	threadpool curlpool = NULL;
 	threadpool tracepool = NULL;
 	char *config_filepath;
-	int i, j, opt, tmp_debug;
+	int i, opt, tmp_debug;
 	pid_t pid, sid;
-
+	uint32_t j;
+	
 	config_filepath = "/usr/local/etc/xsight.cfg";
 
 	tmp_debug = -1;
@@ -227,19 +228,10 @@ int main(int argc, char *argv[]) {
 		goto Cleanup;
 	}
 
-	/* we're only using 1 additional thread to take care of the 
-	 * data transfers. We could use more but it gets real complicated
-	 * because in that case each transfer now has to use a new curl connection
-	 * instead of reusing the exiting set. Memory requirements *balloon*
-	 * likely because I don't know what I'm doing but this works and 
-	 * seems workable for now.
-	 * If you change your mind then create a new connection either in the 
-	 * threaded call or before you call it and pass it in the struct. Either
-	 * way it has to be free'd in the threaded call. 
-	 */
+	/* enable the threadpool we use for curl requests */
 	curlpool = thpool_init(NUM_THREADS);
-	
-	/* we can use mutliple threads for the path tracing feature */
+
+	/* enable the threadpool for the traceroute requests */
 	tracepool = thpool_init(NUM_THREADS);
 
 	if (pthread_mutex_init(&lock, NULL) != 0){
@@ -248,6 +240,7 @@ int main(int argc, char *argv[]) {
 	}
 	log_debug ("Mutex initialized");
 	
+	/* find the orphan flows*/
 	get_end_time();
 
 	/* random seed */
@@ -390,6 +383,11 @@ int main(int argc, char *argv[]) {
  Cleanup:
 	estats_nl_client_destroy(&cl);
 
+	/* destroy the threadpools */
+	/* have to do this before we close the curl handles */
+	thpool_destroy(curlpool);
+	thpool_destroy(tracepool);
+	
 	/* close the rest connection*/
 	hash_close_curl_handles();
 	libinflux_cleanup();
@@ -400,7 +398,6 @@ int main(int argc, char *argv[]) {
 	/* free the option struct*/
 	options_freeoptions();
 	
-
 	if (err != NULL) {
 		PRINT_AND_FREE(err);
 		return EXIT_FAILURE;
@@ -409,11 +406,5 @@ int main(int argc, char *argv[]) {
 	if (daemonize)
 		closelog();
 
-	/* destroy the threadpools
-	 * we do this last as the 
-	 * closing process sometimes gets hung */
-	thpool_destroy(curlpool);
-	thpool_destroy(tracepool);
-	
 	return EXIT_SUCCESS;
 }

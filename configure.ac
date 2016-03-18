@@ -2,10 +2,23 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT(insight, 0.1, rapier@psc.edu)
+AC_INIT(xsight, 0.9, rapier@psc.edu)
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([./])
 AC_CONFIG_HEADERS([config.h])
+
+AC_ARG_ENABLE([clang],
+     [AS_HELP_STRING([--enable-clang],[use clang instead of gcc as C compiler.])])
+
+#Use C99 compilation mode
+if test "x$enable_clang" = "xyes"; then
+    # clang uses c99 mode by default, so we just set CC to clang and we are done
+    CC="clang";
+else
+    # We do not need to set CC as the default is gcc, but we need to set it to
+    # use C99 compilation mode
+    CFLAGS;
+fi
 
 LDFLAGS="$LDFLAGS"
 

@@ -22,6 +22,8 @@ extern struct NetworksHash *networks;
 extern struct Options options;
 struct DeadFlowHash *dfhash;
 
+uint64_t endtime = 0;
+
 /* This global is set so we can tag each item in the orphan flow hash
  * with the associated network connection. 
  * i do not like using this as a global but there is no threading 
@@ -232,9 +234,8 @@ void json_parse_array( json_object *jobj, char *key, int flows) {
  * to actually work and it may not work at different levels of optimization. Figure out the
  * boundary conditions and possible rewrite
  */ 
-uint64_t parse_flows_json(json_object * jobj, int flows) {
+void parse_flows_json(json_object * jobj, int flows) {
 	int index = 0;
-	uint64_t timestamp;
 	enum json_type type;
 	json_object_object_foreach(jobj, key, val) { /*Passing through every array element*/
 		type = json_object_get_type(val);
@@ -255,8 +256,13 @@ uint64_t parse_flows_json(json_object * jobj, int flows) {
 					if (flows) 
 						getFlows(jobj, index);
 					else {
-						timestamp = getTime(jobj, index);
-						return timestamp;
+						/* endtime is a global uint64_t
+						 * set it to zero in case getTime fails
+						 * we also need the value in nanoseconds so
+						 * we multiply the result by 1 MILLION [DOLLARS]!
+						 */
+						endtime = 0;
+						endtime = getTime(jobj, index) * 1000000000;
 					}
 				}
 			}
@@ -271,7 +277,6 @@ uint64_t parse_flows_json(json_object * jobj, int flows) {
 			break;
 		}
 	}
-	return; /*this will throw a warning. It's okay*/
 } 
 
 /* go through the open tcp connections and get the 
@@ -393,7 +398,6 @@ void process_dead_flows () {
 	int qlen;
 	CURLcode curl_res;
 	json_object *json_in = NULL;
-	uint64_t endtime;
 	
 	/* iterate through the networks hash
 	 * we do this so that we only query db's where the flow
@@ -421,7 +425,10 @@ void process_dead_flows () {
 				/* throw an exception as the json string is invalid and continue */
 				continue;
 			}
-			endtime = parse_flows_json(json_in, 0) * 1000000000;
+			/* the global 'endtime' is set in the following function
+			 * if endtime is 0 after this call it means the function getTime
+			 * failed */
+			parse_flows_json(json_in, 0); 
 			if (endtime == 0) {
 				/* TODO: instead of skipping we should just insert the 
 				 * current time. Not ideal but better than leaving it as 0 */

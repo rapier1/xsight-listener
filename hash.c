@@ -140,7 +140,7 @@ void hash_init_flow (struct ConnectionHash *flow) {
 	flow->closed = false;
 	flow->seen = true;
 	flow->age = 1;
-	strcat ((char *)flow->flowid_char, "\0");
+	/* strcat ((char *)flow->flowid_char, "\0");*/
 	return;
 }
 
@@ -150,7 +150,6 @@ int hash_delete_flow (int cid) {
 	if (current != NULL) {
 		log_debug("Deleting flow: %d", current->cid);
 		HASH_DEL(activeflows, current);
-		//free((void *)current->flowid_char);
 		free(current);
 		return 1;
 	}
@@ -163,7 +162,6 @@ void hash_clear_hash () {
 	int i;
 	HASH_ITER(hh, activeflows, curconn, tempconn) {
 		HASH_DEL(activeflows, curconn);
-		//free((void *)curconn->flowid_char);
 		free(curconn);
 	}
 	HASH_ITER(hh, networks, curnet, tempnet) {
@@ -191,7 +189,6 @@ int _by_precedence (NetworksHash *a, NetworksHash *b) {
 	return (a->precedence - b->precedence);
 };
 
-/* used for debugging purposes mostly but may be useful in the future*/
 int hash_count_hash () {
 	return HASH_COUNT(activeflows);
 }
