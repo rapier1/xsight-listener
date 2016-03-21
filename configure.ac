@@ -14,10 +14,6 @@ AC_ARG_ENABLE([clang],
 if test "x$enable_clang" = "xyes"; then
     # clang uses c99 mode by default, so we just set CC to clang and we are done
     CC="clang";
-else
-    # We do not need to set CC as the default is gcc, but we need to set it to
-    # use C99 compilation mode
-    CFLAGS = -std=gnu11;
 fi
 
 LDFLAGS="$LDFLAGS"
@@ -41,6 +37,17 @@ AC_SEARCH_LIBS([config_init], [config], [], [
 AC_SEARCH_LIBS([SHA256_Init], [crypto], [], [
 	echo "SHA256 functions not found. Install libssl or make sure SHA256 functions are compiled into library."
         exit -1])
+AC_SEARCH_LIBS([json_tokener_parse_ex], [json-c json], [], [
+        echo "JSON-C (fedoa) and/or LibJson (debian) library ) is missing."
+        exit -1])
+AC_CHECK_LIB([json-c], [json_tokener_parse_ex], [LIBJSONC=true], [], [])
+AM_CONDITIONAL([LINK_LIBJSONC], [test x$LIBJSONC = xtrue])
+AC_CHECK_LIB([json], [json_tokener_parse_ex], [LIBJSON=true], [], [])
+AM_CONDITIONAL([LINK_LIBJSON], [test x$LIBJSON = xtrue])
+
+if test "$LIBJSONC" = "true"; then
+        AC_DEFINE([HAVE_LIBJSONC], 1, [Define to 1 if json-c is present])
+fi
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h inttypes.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/param.h sys/socket.h unistd.h])

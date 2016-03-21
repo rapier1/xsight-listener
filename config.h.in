@@ -15,6 +15,9 @@
 /* Define to 1 if you have the <libconfig.h> header file. */
 #undef HAVE_LIBCONFIG_H
 
+/* Define to 1 if json-c is present */
+#undef HAVE_LIBJSONC
+
 /* Define to 1 if you have the <libssl/sha.h> header file. */
 #undef HAVE_LIBSSL_SHA_H
 
