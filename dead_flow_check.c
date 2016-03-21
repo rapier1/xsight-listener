@@ -22,8 +22,6 @@ extern struct NetworksHash *networks;
 extern struct Options options;
 struct DeadFlowHash *dfhash;
 
-uint64_t endtime = 0;
-
 /* This global is set so we can tag each item in the orphan flow hash
  * with the associated network connection. 
  * i do not like using this as a global but there is no threading 
@@ -75,7 +73,7 @@ void get_end_time () {
 		}
 
 		/* we are looking for flows so set the flow flag to 1 */
-		parse_flows_json(json_in, 1);
+		parse_flows_json(json_in, 1, NULL);
 		json_object_put(json_in); /* free json object*/
 	}
 	get_current_flows();
@@ -203,8 +201,9 @@ int getIndex (json_object *jobj, int flows) {
  * json_object jobj: inbound json object
  * char key: key name of array
  * int flows: flag to determine type fo data being sought (flowid vs time)
+ * uint64_t endtime: pointer to value for endtime used by getTime in process_dead_flows
  */
-void json_parse_array( json_object *jobj, char *key, int flows) {
+void json_parse_array( json_object *jobj, char *key, int flows, uint64_t *endtime) {
 	enum json_type type;
 	int arraylen;
 	int i;
@@ -219,22 +218,18 @@ void json_parse_array( json_object *jobj, char *key, int flows) {
 		jvalue = json_object_array_get_idx(jarray, i); /*Getting the array element at position i*/
 		type = json_object_get_type(jvalue);
 		if (type == json_type_array) {
-			json_parse_array(jvalue, NULL, flows);
+			json_parse_array(jvalue, NULL, flows, endtime);
 		}
 		else if (type != json_type_object) {
 		}
 		else {
-			parse_flows_json(jvalue, flows);
+			parse_flows_json(jvalue, flows, endtime);
 		}
 	}
 }
 
 /*Parsing the root json object*/
-/* TODO: This is a kludge as we are depending on a NULL return at the end for this
- * to actually work and it may not work at different levels of optimization. Figure out the
- * boundary conditions and possible rewrite
- */ 
-void parse_flows_json(json_object * jobj, int flows) {
+void parse_flows_json(json_object * jobj, int flows, uint64_t *endtime) {
 	int index = 0;
 	enum json_type type;
 	json_object_object_foreach(jobj, key, val) { /*Passing through every array element*/
@@ -256,17 +251,11 @@ void parse_flows_json(json_object * jobj, int flows) {
 					if (flows) 
 						getFlows(jobj, index);
 					else {
-						/* endtime is a global uint64_t
-						 * set it to zero in case getTime fails
-						 * we also need the value in nanoseconds so
-						 * we multiply the result by 1 MILLION [DOLLARS]!
-						 */
-						endtime = 0;
-						endtime = getTime(jobj, index) * 1000000000;
+						*endtime = getTime(jobj, index) * 1000000000;
 					}
 				}
 			}
-			json_parse_array(jobj, key, flows);
+			json_parse_array(jobj, key, flows, endtime);
 			break;
 		case json_type_string:
 		case json_type_boolean: 
@@ -410,6 +399,7 @@ void process_dead_flows () {
 		readcurl = currnet->conn[0];
 		writecurl = currnet->conn[1];
 		HASH_ITER(hh, dfhash, currflow, tempflow) {
+			uint64_t endtime = 0;
 			if (currnet != currflow->network)
 				continue;
 			qlen = snprintf(query, 512,
@@ -425,10 +415,11 @@ void process_dead_flows () {
 				/* throw an exception as the json string is invalid and continue */
 				continue;
 			}
-			/* the global 'endtime' is set in the following function
-			 * if endtime is 0 after this call it means the function getTime
-			 * failed */
-			parse_flows_json(json_in, 0); 
+			/* pass the pointer to endtime into the json processor 
+			 * if it remains 0 then it means we couldn't find a timestamp
+			 * value in the metrics to use
+			 */
+			parse_flows_json(json_in, 0, &endtime); 
 			if (endtime == 0) {
 				/* TODO: instead of skipping we should just insert the 
 				 * current time. Not ideal but better than leaving it as 0 */

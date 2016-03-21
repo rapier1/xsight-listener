@@ -9,8 +9,8 @@
 
 void get_end_time();
 int get_flow_ids(char *);
-void json_parse_array( json_object *, char *, int);
-void parse_flows_json(json_object *, int);
+void json_parse_array( json_object *, char *, int, uint64_t *);
+void parse_flows_json(json_object *, int, uint64_t *);
 int parse_tuples_json(json_object *);
 int build_json_object ( char *, json_object **);
 void get_current_flows();

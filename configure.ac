@@ -17,7 +17,7 @@ if test "x$enable_clang" = "xyes"; then
 else
     # We do not need to set CC as the default is gcc, but we need to set it to
     # use C99 compilation mode
-    CFLAGS;
+    CFLAGS = -std=gnu11;
 fi
 
 LDFLAGS="$LDFLAGS"
