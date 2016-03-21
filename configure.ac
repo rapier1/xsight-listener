@@ -17,6 +17,7 @@ if test "x$enable_clang" = "xyes"; then
 fi
 
 LDFLAGS="$LDFLAGS"
+CFLAGS="$CFLAGS"
 
 # Checks for programs.
 AC_PROG_CC
