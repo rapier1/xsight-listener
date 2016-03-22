@@ -8,13 +8,26 @@ AC_CONFIG_SRCDIR([./])
 AC_CONFIG_HEADERS([config.h])
 
 AC_ARG_ENABLE([clang],
-     [AS_HELP_STRING([--enable-clang],[use clang instead of gcc as C compiler.])])
+	[AS_HELP_STRING([--enable-clang],[use clang instead of gcc as C compiler.])])
 
 #Use C99 compilation mode
 if test "x$enable_clang" = "xyes"; then
-    # clang uses c99 mode by default, so we just set CC to clang and we are done
-    CC="clang";
+    	# clang uses c99 mode by default, so we just set CC to clang and we are done
+    	CC="clang";
 fi
+
+
+AC_ARG_ENABLE(debug,
+AS_HELP_STRING([--enable-debug],
+               [enable debugging, default: no]),
+[case "${enableval}" in
+             yes) debug=true ;;
+             no)  debug=false ;;
+             *)   AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
+esac],
+[debug=false])
+
+AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
 
 LDFLAGS="$LDFLAGS"
 CFLAGS="$CFLAGS"
@@ -45,10 +58,6 @@ AC_CHECK_LIB([json-c], [json_tokener_parse_ex], [LIBJSONC=true], [], [])
 AM_CONDITIONAL([LINK_LIBJSONC], [test x$LIBJSONC = xtrue])
 AC_CHECK_LIB([json], [json_tokener_parse_ex], [LIBJSON=true], [], [])
 AM_CONDITIONAL([LINK_LIBJSON], [test x$LIBJSON = xtrue])
-
-if test "$LIBJSONC" = "true"; then
-        AC_DEFINE([HAVE_LIBJSONC], 1, [Define to 1 if json-c is present])
-fi
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h inttypes.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/param.h sys/socket.h unistd.h])
