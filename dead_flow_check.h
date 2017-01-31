@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 700
 #include "hash.h"
 #include "libinflux.h"
 #include <uthash.h>
@@ -6,6 +7,7 @@
 #include "string-funcs.h"
 #include "debug.h"
 #include <time.h>
+
 
 void get_end_time();
 int get_flow_ids(char *);

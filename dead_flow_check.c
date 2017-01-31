@@ -151,7 +151,7 @@ uint64_t getTime (json_object *jobj, int index) {
 	json_object *jvalue; 
 	json_object *jarray = jobj;
 	json_object *values;
-	struct tm tm = {0}; 
+	struct tm tm; 
 	time_t t = 0;
 	/* put the values array into a new object */
       	json_object_object_get_ex(jobj, "values", &jarray); 
@@ -429,12 +429,12 @@ void process_dead_flows () {
 			json_object_put(json_in); /*free the json object*/
 			
 			qlen = snprintf (query, 512,
-				  "EndTime,type=flowdata,netname=%s,domain=%s,dtn=%s,flow=%s value=%lui 0",
-				  currnet->netname,
-				  currnet->domain_name,
-				  options.dtn_id,
-				  currflow->flow,
-				  endtime);
+					 "EndTime,type=flowdata,netname=%s,domain=%s,dtn=%s value=%lui,flow=%s 0",
+					 currnet->netname,
+					 currnet->domain_name,
+					 options.dtn_id,
+					 endtime,
+					 currflow->flow);
 			query[qlen] = '\0';
 			curl_res = influxWrite(writecurl, query);
 			if (curl_res != CURLE_OK)

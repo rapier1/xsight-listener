@@ -2,6 +2,10 @@
  * Copyright (c) 2016 The Board of Trustees of Carnegie Mellon University.
  *
  *  Author: Chris Rapier <rapier@psc.edu>
+ * actually this was written by Jim Balter (of JBQ Solutions) and 
+ * was lifted from a response her wrong on satckoverflow.com 
+ * Any copyright claims made by me of Carnegie Mellon do not
+ * supercede his claims. 
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the MIT License.
