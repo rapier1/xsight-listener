@@ -53,11 +53,14 @@ void get_end_time () {
 		mycurl->response_size = 0;
 		
 		/* build the query */
+		/* note: we are only looking at flows in the DB that match our DTN, domain, and netname */
+		/* snprintf(query, 512, */
+		/* 	 "SELECT flow,value FROM EndTime WHERE dtn='%s' and domain='%s' and netname='%s' and value=0", */
+		/* 	 options.dtn_id, */
+		/* 	 current->domain_name, */
+		/* 	 current->netname); */
 		snprintf(query, 512,
-			 "SELECT flow,value FROM EndTime WHERE dtn='%s' and domain='%s' and netname='%s' and value=0",
-			 options.dtn_id,
-			 current->domain_name,
-			 current->netname);
+			 "SELECT flow,value FROM EndTime WHERE value=0");
 		curl_res = influxQuery(mycurl, query);
 		/* if this fails go to the next connection but don't fail. */
 		if (curl_res != CURLE_OK) {
@@ -428,11 +431,15 @@ void process_dead_flows () {
 			}
 			json_object_put(json_in); /*free the json object*/
 			
+			/* qlen = snprintf (query, 512, */
+			/* 		 "EndTime,type=flowdata,netname=%s,domain=%s,dtn=%s value=%lui,flow=%s 0", */
+			/* 		 currnet->netname, */
+			/* 		 currnet->domain_name, */
+			/* 		 options.dtn_id, */
+			/* 		 endtime, */
+			/* 		 currflow->flow); */
 			qlen = snprintf (query, 512,
-					 "EndTime,type=flowdata,netname=%s,domain=%s,dtn=%s value=%lui,flow=%s 0",
-					 currnet->netname,
-					 currnet->domain_name,
-					 options.dtn_id,
+					 "EndTime,type=flowdata  value=%lui,flow=%s 0",
 					 endtime,
 					 currflow->flow);
 			query[qlen] = '\0';

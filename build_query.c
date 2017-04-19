@@ -89,7 +89,8 @@ Cleanup:
 void add_path_trace (threadpool curlpool,
 		     threadpool tracepool, 
 		     ConnectionHash *flow,
-		     struct estats_connection_info *conn) {
+		     struct estats_connection_info *conn){
+
 	struct estats_error* err = NULL;
 	struct estats_connection_tuple_ascii asc;
 	struct PathBuild *job;
@@ -104,8 +105,8 @@ void add_path_trace (threadpool curlpool,
 	job = SAFEMALLOC(sizeof (struct PathBuild));
 	job->local_addr = strndup(asc.local_addr, strlen(asc.local_addr));
 	job->rem_addr = strndup(asc.rem_addr, strlen(asc.rem_addr));
-	job->netname = strndup(flow->netname, strlen(flow->netname)); 
-	job->domain_name = strndup(flow->domain_name, strlen(flow->domain_name));
+	/*job->netname = strndup(flow->netname, strlen(flow->netname));*/ 
+	/*job->domain_name = strndup(flow->domain_name, strlen(flow->domain_name));*/
 	job->flowid_char = strndup(flow->flowid_char, SHA256_TEXT);
 	job->cid = flow->cid;
 	job->influx_conn = flow->conn;
@@ -137,7 +138,7 @@ void threaded_path_trace (struct PathBuild *job) {
 	struct addrinfo hint;
 	struct ThreadWrite *influxjob;
 	char results[32][45]; /* hops are limited to 30 but start at 1 */
-	char tag_str[512];
+	/*char tag_str[512];*/
 	char temp_str[512];
 	char *influx_data;
 	int MAX_LINE_SZ_PATH = 16384; /*max size of influx_data*/
@@ -198,12 +199,12 @@ void threaded_path_trace (struct PathBuild *job) {
 	}
 
 	/*create the tag string*/
-	size = snprintf(tag_str, 512,
-			",type=flowdata,netname=%s,domain=%s,dtn=%s, ",
-			job->netname,
-			job->domain_name,
-			options.dtn_id);
-	tag_str[size] = '\0';
+	/* size = snprintf(tag_str, 512, */
+	/* 		",type=flowdata,netname=%s,domain=%s,dtn=%s, ", */
+	/* 		job->netname, */
+	/* 		job->domain_name, */
+	/* 		options.dtn_id); */
+	/* tag_str[size] = '\0'; */
 	
 	/* init the final command string for influx*/
 	/* this is freed in the threaded_influx_write function*/
@@ -213,9 +214,12 @@ void threaded_path_trace (struct PathBuild *job) {
 	/* iterate through each entry in the results array and craft an
 	 * influx happy string */
 	for (i = 1; i <= ttl; i++) {
+		/* size = snprintf(temp_str, 512, */
+		/* 		"path%s,hop=%d value=\"%s\",flow=%s\n", */
+		/* 		tag_str, i, results[i], job->flowid_char); */
 		size = snprintf(temp_str, 512,
-				"path%s,hop=%d value=\"%s\",flow=%s\n",
-				tag_str, i, results[i], job->flowid_char);
+				"path,hop=%d value=\"%s\",flow=%s\n",
+				i, results[i], job->flowid_char);
 		temp_str[size] = '\0';
 		total_size += size;
 
@@ -285,8 +289,10 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 
 	/* note, we'll set the start time when we make the initial instrument read */
 
-        size = snprintf(tag_str, 512, ",type=flowdata,netname=%s,domain=%s,dtn=%s value=", 
-               flow->netname, flow->domain_name, options.dtn_id);
+        /* size = snprintf(tag_str, 512, ",type=flowdata,netname=%s,domain=%s,dtn=%s value=",  */
+        /*        flow->netname, flow->domain_name, options.dtn_id); */
+        /* tag_str[size] = '\0'; */
+	size = snprintf(tag_str, 512, ",type=flowdata value="); 
         tag_str[size] = '\0';
 
 	/* add the src_ip */
@@ -435,11 +441,14 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 		/* we need to create an EndTime entry when the flow is created so we can search
 		 * on it if necessary. We have to give it a 0 influx timestamp so it cvan be updated
 		 * when the flow ends */
+		/* length = snprintf (suffix, 512, */
+		/* 		   "EndTime,type=flowdata,netname=%s,domain=%s,dtn=%s value=0i,flow=%s 0\n", */
+		/* 		   flow->netname, */
+		/* 		   flow->domain_name, */
+		/* 		   options.dtn_id, */
+		/* 		   flow->flowid_char); */
 		length = snprintf (suffix, 512,
-				   "EndTime,type=flowdata,netname=%s,domain=%s,dtn=%s value=0i,flow=%s 0\n",
-				   flow->netname,
-				   flow->domain_name,
-				   options.dtn_id,
+				   "EndTime,type=flowdata value=0i,flow=%s 0\n",
 				   flow->flowid_char);
 	} else {
 		/* StartTimeStamp is in nanoseconds since epoch so we have to convert
@@ -453,20 +462,32 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 	}
 	
 	/*create the time string*/
-	length = strlen (",type=flowdata,netname=,domain=,dtn=,flow= value=i \n") 
+	/* length = strlen (",type=flowdata,netname=,domain=,dtn=,flow= value=i \n")  */
+	/* 	+ strlen(time_marker) */
+	/* 	+ strlen (flow->netname) */
+	/* 	+ strlen(flow->domain_name) */
+	/* 	+ strlen(options.dtn_id) */
+	/* 	+ SHA256_TEXT */
+	/* 	+ strlen(suffix) + 22;  */
+	length = strlen (",type=flowdata value=i,flow= \n") 
 		+ strlen(time_marker)
-		+ strlen (flow->netname)
-		+ strlen(flow->domain_name)
-		+ strlen(options.dtn_id)
 		+ SHA256_TEXT
 		+ strlen(suffix) + 22; 
 	influx_data = SAFEMALLOC(length);
-	snprintf(influx_data, length,
-		 "%s,type=flowdata,netname=%s,domain=%s,dtn=%s value=%"PRIu64"i,flow=%s %s\n%s", 
+	/* snprintf(influx_data, length, */
+	/* 	 "%s,type=flowdata,netname=%s,domain=%s,dtn=%s value=%"PRIu64"i,flow=%s %s\n%s",  */
+	/* 	 time_marker, */
+	/* 	 flow->netname, */
+	/* 	 flow->domain_name,  */
+	/* 	 options.dtn_id, */
+	/* 	 timestamp, */
+	/* 	 flow->flowid_char, */
+	/* 	 influxts, */
+	/* 	 suffix); */
+	/* influx_data[length - 1] = '\0'; */
+		snprintf(influx_data, length,
+		 "%s,type=flowdata value=%"PRIu64"i,flow=%s %s\n%s", 
 		 time_marker,
-		 flow->netname,
-		 flow->domain_name, 
-		 options.dtn_id,
 		 timestamp,
 		 flow->flowid_char,
 		 influxts,
@@ -523,6 +544,7 @@ void read_metrics (threadpool curlpool,
 			flow->netname,
 			flow->domain_name,
 			options.dtn_id);
+	size = snprintf(tag_str, 512, ",type=metrics ");
 	tag_str[size] = '\0';
 	
 	/* init the final command string for influx*/
@@ -584,11 +606,15 @@ void read_metrics (threadpool curlpool,
 	 * for every datapoint in the update series to the same value of 0
 	 */
 
+	/* size = snprintf(update_str, 512, */
+	/* 		"updated,type=flowdata,netname=%s,domain=%s,dtn=%s value=%"PRIu64"i,flow=%s 0",  */
+	/* 		flow->netname, */
+	/* 		flow->domain_name, */
+	/* 		options.dtn_id, */
+	/* 		timestamp, */
+	/* 		flow->flowid_char); */
 	size = snprintf(update_str, 512,
-			"updated,type=flowdata,netname=%s,domain=%s,dtn=%s value=%"PRIu64"i,flow=%s 0", 
-			flow->netname,
-			flow->domain_name,
-			options.dtn_id,
+			"updated,type=flowdata value=%"PRIu64"i,flow=%s 0", 
 			timestamp,
 			flow->flowid_char);
 	update_str[size] = '\0';

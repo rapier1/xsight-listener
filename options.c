@@ -28,6 +28,7 @@ int options_get_config(char *path, int tmp_debug) {
 	const char *network_name;
 	const config_setting_t *array;
 	config_t cfg;
+	char *temp_db_name;
 	
 	config_init(&cfg);
 	
@@ -172,6 +173,11 @@ int options_get_config(char *path, int tmp_debug) {
 		log_debug("Network: %s, netname: %s", network_name, string);
 		network->netname = strdup(string);
 
+		/* start building the database name we will be using*/
+		/* format is 'network_domain_dtn' */
+		temp_db_name = strndup(string, strlen(string));
+		strncat(temp_db_name, "_", 1);
+		
 		if (!config_setting_lookup_string(net_child, "domain", &string)) {
 			log_error("Monitored network %s's domain not specified in config file! Exiting.",
 				  network_name);
@@ -179,7 +185,17 @@ int options_get_config(char *path, int tmp_debug) {
 		}
 		log_debug("Network: %s, domain_name: %s", network_name, string);
 		network->domain_name = strdup(string);
+		
+		/* append the domain to the database string*/
+		strncat(temp_db_name, string, strlen(string));
+		strncat(temp_db_name, "_", 1);
 
+		/* finish up the datbase name with the dtn */
+		strncat(temp_db_name, options.dtn_id, strlen(options.dtn_id));
+		network->influx_database = strndup(temp_db_name, strlen(temp_db_name));
+		
+		printf("Database name is : %s\n", network->influx_database);
+		
 		if (!config_setting_lookup_string(net_child, "host_url", &string)) {
 			log_error("Monitored network %s's hosturl not specified in config file! Exiting.",
 				  network_name);
@@ -200,13 +216,14 @@ int options_get_config(char *path, int tmp_debug) {
 		}
 		log_debug("Verify SSL certificate on %s: %d", network->influx_host_url, network->verify_ssl);
 
-		if (!config_setting_lookup_string(net_child, "database", &string)) {
-			log_error("Monitored network %s's database not specified in config file! Exiting.",
-				  network_name);
-			return -1;
-		}
-		log_debug("Network: %s, database: %s", network_name, string);
-		network->influx_database = strdup(string);
+		/* the database is now determined by the concatonation of the netname, domain, and dtn */
+		/* if (!config_setting_lookup_string(net_child, "database", &string)) { */
+		/* 	log_error("Monitored network %s's database not specified in config file! Exiting.", */
+		/* 		  network_name); */
+		/* 	return -1; */
+		/* } */
+		/* log_debug("Network: %s, database: %s", network_name, string); */
+		/* network->influx_database = strdup(string); */
 
 		if (!config_setting_lookup_string(net_child, "db_user", &string)) {
 			log_error("Monitored network %s's database user not specified in config file! Exiting.",
@@ -250,6 +267,7 @@ int options_get_config(char *path, int tmp_debug) {
 				  network->net_addrs[j]);
 		}
 		hash_add_network(network, i);
+		
 	}
 	/* we need to sort the network hash in precedence order */
 	hash_sort_by_precedence();
