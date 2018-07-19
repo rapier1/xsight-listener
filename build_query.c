@@ -89,8 +89,7 @@ Cleanup:
 void add_path_trace (threadpool curlpool,
 		     threadpool tracepool, 
 		     ConnectionHash *flow,
-		     struct estats_connection_info *conn){
-
+		     struct estats_connection_info *conn) {
 	struct estats_error* err = NULL;
 	struct estats_connection_tuple_ascii asc;
 	struct PathBuild *job;
@@ -105,7 +104,7 @@ void add_path_trace (threadpool curlpool,
 	job = SAFEMALLOC(sizeof (struct PathBuild));
 	job->local_addr = strndup(asc.local_addr, strlen(asc.local_addr));
 	job->rem_addr = strndup(asc.rem_addr, strlen(asc.rem_addr));
-	job->netname = strndup(flow->netname, strlen(flow->netname));
+	job->netname = strndup(flow->netname, strlen(flow->netname)); 
 	job->domain_name = strndup(flow->domain_name, strlen(flow->domain_name));
 	job->flowid_char = strndup(flow->flowid_char, SHA256_TEXT);
 	job->cid = flow->cid;
@@ -138,7 +137,7 @@ void threaded_path_trace (struct PathBuild *job) {
 	struct addrinfo hint;
 	struct ThreadWrite *influxjob;
 	char results[32][45]; /* hops are limited to 30 but start at 1 */
-	/*char tag_str[512];*/
+	char tag_str[512];
 	char temp_str[512];
 	char *influx_data;
 	int MAX_LINE_SZ_PATH = 16384; /*max size of influx_data*/
@@ -197,6 +196,7 @@ void threaded_path_trace (struct PathBuild *job) {
 		freeaddrinfo(local_address);
 		goto Cleanup;
 	}
+
 	/* init the final command string for influx*/
 	/* this is freed in the threaded_influx_write function*/
 	influx_data = SAFEMALLOC(MAX_LINE_SZ_PATH);
@@ -276,6 +276,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	 */
 
 	/* note, we'll set the start time when we make the initial instrument read */
+
         size = snprintf(tag_str, 512, ",type=flowdata value=");
         tag_str[size] = '\0';
 
@@ -561,6 +562,7 @@ void read_metrics (threadpool curlpool,
 	 * however, we don't make any reads against the database so we set the timestamp
 	 * for every datapoint in the update series to the same value of 0
 	 */
+
 	size = snprintf(update_str, 512,
 			"updated,type=flowdata value=%"PRIu64"i,flow=\"%s\" 0", 
 			timestamp,

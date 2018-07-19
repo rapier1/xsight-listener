@@ -39,7 +39,7 @@ typedef struct Options {
 	const char *domain_name;
 	const char *dtn_id;
 	const char *influx_host_url;
-	char *influx_database;
+	const char *influx_database;
 	const char *influx_password;
 	const char *influx_user;
         char **include_ips;
