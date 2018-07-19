@@ -197,14 +197,6 @@ void threaded_path_trace (struct PathBuild *job) {
 		goto Cleanup;
 	}
 
-	/*create the tag string*/
-	size = snprintf(tag_str, 512,
-			",type=flowdata,netname=%s,domain=%s,dtn=%s, ",
-			job->netname,
-			job->domain_name,
-			options.dtn_id);
-	tag_str[size] = '\0';
-	
 	/* init the final command string for influx*/
 	/* this is freed in the threaded_influx_write function*/
 	influx_data = SAFEMALLOC(MAX_LINE_SZ_PATH);
@@ -214,8 +206,8 @@ void threaded_path_trace (struct PathBuild *job) {
 	 * influx happy string */
 	for (i = 1; i <= ttl; i++) {
 		size = snprintf(temp_str, 512,
-				"path%s,hop=%d value=\"%s\",flow=%s\n",
-				tag_str, i, results[i], job->flowid_char);
+				"path,type=flowdata hop=%d value=\"%s\",flow=\"%s\"\n",
+				i, results[i], job->flowid_char);
 		temp_str[size] = '\0';
 		total_size += size;
 
@@ -285,12 +277,11 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 
 	/* note, we'll set the start time when we make the initial instrument read */
 
-        size = snprintf(tag_str, 512, ",type=flowdata,netname=%s,domain=%s,dtn=%s value=", 
-               flow->netname, flow->domain_name, options.dtn_id);
+        size = snprintf(tag_str, 512, ",type=flowdata value=");
         tag_str[size] = '\0';
 
 	/* add the src_ip */
-	size = snprintf(temp_str, 512, "src_ip%s\"%s\",flow=%s\n", tag_str,
+	size = snprintf(temp_str, 512, "src_ip%s\"%s\",flow=\"%s\"\n", tag_str,
 			asc.local_addr, flow->flowid_char);
 	temp_str[size] = '\0';
 	total_size += size;
@@ -298,7 +289,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 		strncat(influx_data, temp_str, size);
 
 	/* add the dest_ip */
-	size = snprintf(temp_str, 512, "dest_ip%s\"%s\",flow=%s\n", tag_str,
+	size = snprintf(temp_str, 512, "dest_ip%s\"%s\",flow=\"%s\"\n", tag_str,
 			asc.rem_addr, flow->flowid_char);
 	temp_str[size] = '\0';
 	total_size += size;
@@ -306,7 +297,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 			strncat(influx_data, temp_str, size);
 
 	/* add the src_port */
-	size = snprintf(temp_str, 512, "src_port%s%si,flow=%s\n", tag_str,
+	size = snprintf(temp_str, 512, "src_port%s%si,flow=\"%s\"\n", tag_str,
 			asc.local_port, flow->flowid_char);
 	temp_str[size] = '\0';
 	total_size += size;
@@ -314,7 +305,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 		strncat(influx_data, temp_str, size);
 
 	/* add the dest_port */
-	size = snprintf(temp_str, 512, "dest_port%s%si,flow=%s\n", tag_str,
+	size = snprintf(temp_str, 512, "dest_port%s%si,flow=\"%s\"\n", tag_str,
 			asc.rem_port, flow->flowid_char);
 	temp_str[size] = '\0';
 	total_size += size;
@@ -322,7 +313,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 		strncat(influx_data, temp_str, size);
 
 	/* add the command */
-	size = snprintf(temp_str, 512, "command%s\"%s\",flow=%s\n", tag_str,
+	size = snprintf(temp_str, 512, "command%s\"%s\",flow=\"%s\"\n", tag_str,
 			conn->cmdline, flow->flowid_char);
 	temp_str[size] = '\0';
 	total_size += size;
@@ -330,7 +321,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 		strncat(influx_data, temp_str, size);
 
 	/* add the analyzed sereis */
-	size = snprintf(temp_str, 512, "analyzed%s0i,flow=%s\n", tag_str,
+	size = snprintf(temp_str, 512, "analyzed%s0i,flow=\"%s\"\n", tag_str,
 		flow->flowid_char);
 	temp_str[size] = '\0';
 	total_size += size;
@@ -436,10 +427,7 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 		 * on it if necessary. We have to give it a 0 influx timestamp so it cvan be updated
 		 * when the flow ends */
 		length = snprintf (suffix, 512,
-				   "EndTime,type=flowdata,netname=%s,domain=%s,dtn=%s value=0i,flow=%s 0\n",
-				   flow->netname,
-				   flow->domain_name,
-				   options.dtn_id,
+				   "EndTime,type=flowdata value=0i,flow=\"%s\" 0\n",
 				   flow->flowid_char);
 	} else {
 		/* StartTimeStamp is in nanoseconds since epoch so we have to convert
@@ -453,20 +441,14 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 	}
 	
 	/*create the time string*/
-	length = strlen (",type=flowdata,netname=,domain=,dtn=,flow= value=i \n") 
+	length = strlen (",type=flowdata value=i,flow=\"\" \n") 
 		+ strlen(time_marker)
-		+ strlen (flow->netname)
-		+ strlen(flow->domain_name)
-		+ strlen(options.dtn_id)
 		+ SHA256_TEXT
 		+ strlen(suffix) + 22; 
 	influx_data = SAFEMALLOC(length);
 	snprintf(influx_data, length,
-		 "%s,type=flowdata,netname=%s,domain=%s,dtn=%s value=%"PRIu64"i,flow=%s %s\n%s", 
+		 "%s,type=flowdata value=%"PRIu64"i,flow=\"%s\" %s\n%s", 
 		 time_marker,
-		 flow->netname,
-		 flow->domain_name, 
-		 options.dtn_id,
 		 timestamp,
 		 flow->flowid_char,
 		 influxts,
@@ -519,10 +501,7 @@ void read_metrics (threadpool curlpool,
 	/* between flow and and esdata we have all of the information we need */
 
 	/*create the tag string*/
-	size = snprintf(tag_str, 512, ",type=metrics,netname=%s,domain=%s,dtn=%s", 
-			flow->netname,
-			flow->domain_name,
-			options.dtn_id);
+	size = snprintf(tag_str, 512, ",type=metrics "); 
 	tag_str[size] = '\0';
 	
 	/* init the final command string for influx*/
@@ -541,25 +520,25 @@ void read_metrics (threadpool curlpool,
 		char temp_str[512];
 	       	switch(estats_var_array[i].valtype) {
 		case ESTATS_UNSIGNED32:
-			sprintf(estats_val, " value=%"PRIu32"i ", esdata->val[i].uv32);
+			sprintf(estats_val, " value=%"PRIu32"i", esdata->val[i].uv32);
 			break;
 		case ESTATS_SIGNED32:
-			sprintf(estats_val, " value=%"PRId32"i ", esdata->val[i].sv32);
+			sprintf(estats_val, " value=%"PRId32"i", esdata->val[i].sv32);
 			break;
 		case ESTATS_UNSIGNED64:
-			sprintf(estats_val, " value=%"PRIu64"i ", esdata->val[i].uv64);
+			sprintf(estats_val, " value=%"PRIu64"i", esdata->val[i].uv64);
 			break;
 		case ESTATS_UNSIGNED8:
-			sprintf(estats_val, " value=%"PRIu8"i ", esdata->val[i].uv8);
+			sprintf(estats_val, " value=%"PRIu8"i", esdata->val[i].uv8);
 			break;
 		case ESTATS_UNSIGNED16:
-			sprintf(estats_val, " value=%"PRIu16"i ", esdata->val[i].uv16);
+			sprintf(estats_val, " value=%"PRIu16"i", esdata->val[i].uv16);
 			break;
 		default:
 			break;
 		} /*end switch*/
 		
-		size = snprintf(temp_str, 512, "%s%s%s,flow=%s%"PRIu64"\n",
+		size = snprintf(temp_str, 512, "%s%s%s,flow=\"%s\" %"PRIu64"\n",
 				estats_var_array[i].name,
 				tag_str,
 				estats_val,
@@ -585,10 +564,7 @@ void read_metrics (threadpool curlpool,
 	 */
 
 	size = snprintf(update_str, 512,
-			"updated,type=flowdata,netname=%s,domain=%s,dtn=%s value=%"PRIu64"i,flow=%s 0", 
-			flow->netname,
-			flow->domain_name,
-			options.dtn_id,
+			"updated,type=flowdata value=%"PRIu64"i,flow=\"%s\" 0", 
 			timestamp,
 			flow->flowid_char);
 	update_str[size] = '\0';
