@@ -439,7 +439,7 @@ void process_dead_flows () {
 			/* 		 endtime, */
 			/* 		 currflow->flow); */
 			qlen = snprintf (query, 512,
-					 "EndTime,type=flowdata  value=%lui,flow=%s 0",
+					 "EndTime,type=flowdata value=%lui,flow=%s 0",
 					 endtime,
 					 currflow->flow);
 			query[qlen] = '\0';

@@ -28,7 +28,6 @@
 #include "scripts.h"
 #include "string-funcs.h"
 #include "debug.h"
-#include <linux/in6.h>
 
 
 int include_port (int, int, int [], int);
