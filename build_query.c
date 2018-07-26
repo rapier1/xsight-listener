@@ -647,11 +647,10 @@ void threaded_influx_write (struct ThreadWrite *job) {
 	 	log_debug("%s", job->action);
 	}
 	
-	/* we shouldn't need to lock the thread here */
-	mycurl->status = 1;
         log_debug2("%s", job->data);
 	
 Error:
+	mycurl->status = 1; /* this indicates that the handle is available */
 	free(job->action);
 	free(job->data);
 	free(job);
