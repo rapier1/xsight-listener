@@ -137,7 +137,6 @@ void threaded_path_trace (struct PathBuild *job) {
 	struct addrinfo hint;
 	struct ThreadWrite *influxjob;
 	char results[32][45]; /* hops are limited to 30 but start at 1 */
-	char tag_str[512];
 	char temp_str[512];
 	char *influx_data;
 	int MAX_LINE_SZ_PATH = 16384; /*max size of influx_data*/
@@ -227,7 +226,6 @@ void threaded_path_trace (struct PathBuild *job) {
 	/* add this to the curl thread pool */
 	thpool_add_work(job->mythread, (void*)threaded_influx_write, (void*)influxjob);
 
-	//free(tag_str);
 	free((void *)job->local_addr);
 	free((void *)job->rem_addr);
 	free((void *)job->netname);

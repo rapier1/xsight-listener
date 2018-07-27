@@ -90,7 +90,7 @@ int hash_get_curl_handles () {
 /* find a specific connection ID in the hash */
 struct ConnectionHash *hash_find_cid(int cid) {
         struct ConnectionHash *temphash;
-	HASH_FIND_INT(activeflows, &cid, temphash );  
+	HASH_FIND_INT(activeflows, &cid, temphash);  
 	return temphash;
 };
 

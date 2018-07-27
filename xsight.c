@@ -149,14 +149,18 @@ int main(int argc, char *argv[]) {
 	threadpool curlpool = NULL;
 	threadpool tracepool = NULL;
 	char *config_filepath;
-	int i, opt, tmp_debug;
+	int i, opt, tmp_debug, stats_count;
 	pid_t pid, sid;
-	uint32_t j;
+	uint32_t j, trace_count, metric_count;
 	
 	config_filepath = "/usr/local/etc/xsight.cfg";
 
 	tmp_debug = -1;
-	j = daemonize = 0;
+	j = 0;
+	daemonize = 0;
+	trace_count = 0;
+	metric_count = 0;
+	stats_count = 0;
 
 	if (signal(SIGINT, sighandler) == SIG_ERR) {
 		log_error ("SIGINT handler not functional");
@@ -263,6 +267,7 @@ int main(int argc, char *argv[]) {
 
 	while (1) {
 		j++;
+		stats_count++;
 		log_debug("Connection scan: %d", j);
 
 		Chk(estats_connection_list_new(&clist));
@@ -312,8 +317,10 @@ int main(int argc, char *argv[]) {
 				    temphash->added == false) {
 					add_flow_influx(curlpool, temphash, ci);
 					read_metrics(curlpool, temphash, cl);
+					metric_count++;
 					add_time(curlpool, temphash, cl, ci->cid, "StartTime");
 					add_path_trace(curlpool, tracepool, temphash, ci);
+					trace_count++;
 					temphash->added = true;
 				}
 			} else {
@@ -350,6 +357,7 @@ int main(int argc, char *argv[]) {
 				// get data
 				temphash->lastpoll = time(NULL);
 				read_metrics(curlpool, temphash, cl);
+				metric_count++;
 			}
 
 			/* everything is masked except for state */
@@ -365,6 +373,7 @@ int main(int argc, char *argv[]) {
 					 * so just wait for it to expire
 					 */
 					read_metrics(curlpool, temphash, cl);
+					metric_count++;
 					add_time(curlpool, temphash, NULL, 0, "EndTime");
 					temphash->closed = true;
 				}
@@ -374,6 +383,12 @@ int main(int argc, char *argv[]) {
 		estats_val_data_free(&esdata);
 		estats_connection_list_free(&clist);
 		log_debug("Hash count: %d", hash_count_hash());
+		if (stats_count == 60) {
+			stats_count = 0;
+			log_info ("Scan #: %d; Current hash count: %d; Total Traceroutes: %d; Total Metrics: %d; Flow Hash Overhead: %ld",
+				  j, hash_count_hash(), trace_count,
+				  metric_count, HASH_OVERHEAD(hh, activeflows));
+		}
 		if (exitnow)
 			goto Cleanup;
 		/* sleep(options.conn_interval); */
