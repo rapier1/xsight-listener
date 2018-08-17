@@ -21,6 +21,9 @@
 extern struct NetworksHash *networks;
 extern struct Options options;
 struct DeadFlowHash *dfhash;
+struct DeadFlowHash *ethash;
+struct DeadFlowHash *sthash;
+
 
 /* This global is set so we can tag each item in the orphan flow hash
  * with the associated network connection. 
@@ -29,6 +32,13 @@ struct DeadFlowHash *dfhash;
  * passed through the functions here
  */
 NetworksHash *global_current_network;
+
+
+/* NEED TO REDO THIS. We no longer have EndTime=0 to look for. We 
+   need to get a list of all flows with a StartTime and all flows with
+   and EndTime. Find the flows with a StartTime but no EndTime. Then check 
+   those hash values to see if any of them ar still active. Write an
+   EndTime for the ones that are not */
 
 
 /* primary function to find and resolve orphan flows
@@ -43,18 +53,20 @@ void get_end_time () {
 	json_object *json_in = NULL;
 	char query[512];
 
+	//printf("In get_end_time\n");
 	/* iterate over the open curl handles and fetch 
 	 * endtime data from each of them as json objects
 	 */
 	HASH_ITER(hh, networks, current, temp) {
 		global_current_network = current; /* we use this later to tag the flow with the associated network */
-		/* get curl handle */
+
+		/* get curl handle*/
 		mycurl = current->conn[0];
 		mycurl->response_size = 0;
 		
 		/* build the query */
 		snprintf(query, 512,
-			 "SELECT flow,value FROM EndTime WHERE value=0");
+			 "SELECT flow,value FROM EndTime");
 		curl_res = influxQuery(mycurl, query);
 		/* if this fails go to the next connection but don't fail. */
 		if (curl_res != CURLE_OK) {
@@ -69,14 +81,63 @@ void get_end_time () {
 			continue;
 		}
 
-		/* we are looking for flows so set the flow flag to 1 */
-		parse_flows_json(json_in, 1, NULL);
+		/* we are looking for endtime flows so set the flow flag to 1 
+		 * and the startttime flag to false */
+		parse_flows_json(json_in, 1, NULL, NULL);
 		json_object_put(json_in); /* free json object*/
+
+		mycurl->response_size = 0;
+		
+		/* build the query */
+		snprintf(query, 512,
+			 "SELECT flow,value FROM StartTime");
+		curl_res = influxQuery(mycurl, query);
+		/* if this fails go to the next connection but don't fail. */
+		if (curl_res != CURLE_OK) {
+			log_error("Curl Failure for %s while checking stale flows",
+				  curl_easy_strerror(curl_res));
+			continue;
+		}
+
+		if (build_json_object(mycurl->response, &json_in) == 0) {
+			/* failed to form valid json object
+			 * the called function will throw a warning */
+			continue;
+		}
+
+		/* we are looking for starttime flows so set the flow flag to 1 
+                 * and the starttime flag to true */
+		parse_flows_json(json_in, 1, NULL, 1);
+		json_object_put(json_in); /* free json object*/		
 	}
+	find_difference();
 	get_current_flows();
 	process_dead_flows();
 	/* and we are done */
 }
+
+/* find the difference between the EndTime has and the StartTime hash.
+ * Basically, go through the StartTime hash and any flows that don't
+ * exist in the EndTime hash are placed in the deadflow hash (dfhash)
+ * then use the dfhash in the rest of the code */
+
+void find_difference () {
+	DeadFlowHash *currflow, *tempflow, *response;
+	
+	HASH_ITER(hh, sthash, currflow, tempflow) {
+		HASH_FIND_STR(ethash, currflow->flow, response);
+		if (response == NULL) {
+			/* We may have duplicate StartTimes in the DB (just because, that's why
+			 * so make sure we haven't already added this flow to the dfhash */
+			HASH_FIND_STR(dfhash, currflow->flow, response);
+			if (response == NULL) {
+				/* printf ("Could not find a match for %s\n", currflow->flow);*/
+				HASH_ADD_KEYPTR(hh, dfhash, currflow->flow, strlen(currflow->flow), currflow);
+			}
+		}
+	}
+}
+
 
 /* take the incoming json string and turn it into an object 
  * char response: incoming json string
@@ -86,6 +147,8 @@ void get_end_time () {
 int build_json_object ( char *response, json_object **json_in) {
         json_tokener *tok = json_tokener_new();
         enum json_tokener_error jerr;
+
+	/* printf("In build_json_object\n");*/
 	if (strlen(response) < 1)
 		return 0;
 	
@@ -115,11 +178,12 @@ int build_json_object ( char *response, json_object **json_in) {
  * json_object *jobj: inbound json object (array)
  * int index: position in array for flow id string
  */
-void getFlows (json_object *jobj, int index) {
+void getFlows (json_object *jobj, int index, bool starttime) {
 	int i, length;
 	json_object *jvalue; 
 	json_object *jarray = jobj;
 	json_object *values;
+	/* printf("In getFlows\n"); */
 	/*turn the key:value pair into an array of arrays*/
       	json_object_object_get_ex(jobj, "values", &jarray); 
         /*Getting the numbers of arrays in the object*/
@@ -134,7 +198,10 @@ void getFlows (json_object *jobj, int index) {
 			curr->flow = (char *)strdup(json_object_get_string(jvalue));
 			/* we do this so we can match the flow to a specific network connection */
 			curr->network = global_current_network;
-			HASH_ADD_KEYPTR(hh, dfhash, curr->flow, strlen(curr->flow), curr);
+			if (starttime)
+				HASH_ADD_KEYPTR(hh, sthash, curr->flow, strlen(curr->flow), curr);
+			else
+				HASH_ADD_KEYPTR(hh, ethash, curr->flow, strlen(curr->flow), curr);
 		}
 	}
 }
@@ -150,6 +217,8 @@ uint64_t getTime (json_object *jobj, int index) {
 	json_object *values;
 	struct tm tm; 
 	time_t t = 0;
+
+	/* printf("In getTime\n");*/
 	/* put the values array into a new object */
       	json_object_object_get_ex(jobj, "values", &jarray); 
 	/* now get the real array*/
@@ -179,6 +248,8 @@ int getIndex (json_object *jobj, int flows) {
 	json_object *jvalue; 
 	json_object *jarray = jobj;
 	char *needle;
+
+	/* printf ("In getIndex\n");*/
 	if (flows)
 		needle = "flow";
 	else
@@ -200,13 +271,14 @@ int getIndex (json_object *jobj, int flows) {
  * int flows: flag to determine type fo data being sought (flowid vs time)
  * uint64_t endtime: pointer to value for endtime used by getTime in process_dead_flows
  */
-void json_parse_array( json_object *jobj, char *key, int flows, uint64_t *endtime) {
+void json_parse_array( json_object *jobj, char *key, int flows, uint64_t *endtime, bool starttime) {
 	enum json_type type;
 	int arraylen;
 	int i;
 	json_object * jvalue;
 	json_object *jarray = jobj; /*Simply get the array*/
-	
+
+	/*printf("In json_parse_array\n");*/
 	if(key)
 		json_object_object_get_ex(jobj, key, &jarray); /*Getting the array if it is a key value pair*/
 	
@@ -215,20 +287,22 @@ void json_parse_array( json_object *jobj, char *key, int flows, uint64_t *endtim
 		jvalue = json_object_array_get_idx(jarray, i); /*Getting the array element at position i*/
 		type = json_object_get_type(jvalue);
 		if (type == json_type_array) {
-			json_parse_array(jvalue, NULL, flows, endtime);
+			json_parse_array(jvalue, NULL, flows, endtime, starttime);
 		}
 		else if (type != json_type_object) {
 		}
 		else {
-			parse_flows_json(jvalue, flows, endtime);
+			parse_flows_json(jvalue, flows, endtime, starttime);
 		}
 	}
 }
 
 /*Parsing the root json object*/
-void parse_flows_json(json_object * jobj, int flows, uint64_t *endtime) {
+void parse_flows_json(json_object * jobj, int flows, uint64_t *endtime, bool starttime) {
 	int index = 0;
 	enum json_type type;
+
+	/* printf("In parse_flows_json\n"); */
 	json_object_object_foreach(jobj, key, val) { /*Passing through every array element*/
 		type = json_object_get_type(val);
 		switch (type) {
@@ -246,13 +320,13 @@ void parse_flows_json(json_object * jobj, int flows, uint64_t *endtime) {
 				}
 				if (strpos(key, "values") == 0) {
 					if (flows) 
-						getFlows(jobj, index);
+						getFlows(jobj, index, starttime);
 					else {
 						*endtime = getTime(jobj, index) * 1000000000;
 					}
 				}
 			}
-			json_parse_array(jobj, key, flows, endtime);
+			json_parse_array(jobj, key, flows, endtime, starttime);
 			break;
 		case json_type_string:
 		case json_type_boolean: 
@@ -283,6 +357,7 @@ void get_current_flows () {
 	uint64_t starttime = 0;
 	int i;
 	
+	/* printf ("In get_current_flows\n"); */
 	/* set up estats mask to get the StartTime information */
 	/* we need this for the flow id hash */
 	stime_mask.masks[0] = 1UL << 12;/*perf*/
@@ -385,6 +460,7 @@ void process_dead_flows () {
 	CURLcode curl_res;
 	json_object *json_in = NULL;
 	
+	/* printf ("In process_dead_flows\n");*/
 	/* iterate through the networks hash
 	 * we do this so that we only query db's where the flow
 	 * is a possible member. */
@@ -399,6 +475,7 @@ void process_dead_flows () {
 			uint64_t endtime = 0;
 			if (currnet != currflow->network)
 				continue;
+			/* get the time stamp from the last metric and use that as the EndTime*/
 			qlen = snprintf(query, 512,
 					"SELECT time, value FROM SegsIn WHERE flow ='%s' ORDER BY DESC LIMIT 1",
 					currflow->flow);
@@ -412,21 +489,22 @@ void process_dead_flows () {
 				/* throw an exception as the json string is invalid and continue */
 				continue;
 			}
-			/* pass the pointer to endtime into the json processor 
+			/* pass the pointer to endtime into the json processor
 			 * if it remains 0 then it means we couldn't find a timestamp
 			 * value in the metrics to use
 			 */
-			parse_flows_json(json_in, 0, &endtime); 
+			parse_flows_json(json_in, 0, &endtime, NULL);
 			if (endtime == 0) {
-				/* TODO: instead of skipping we should just insert the 
+				/* TODO: instead of skipping we should just insert the
 				 * current time. Not ideal but better than leaving it as 0 */
 				fprintf(stderr, "Invalid endtime value. Skipping\n");
-				continue;
+				endtime = time(NULL);
+				//continue;
 			}
 			json_object_put(json_in); /*free the json object*/
 			
 			qlen = snprintf (query, 512,
-					 "EndTime,type=flowdata value=%lui,flow=%s 0",
+					 "EndTime,type=flowdata value=%"PRIu64"i,flow=\"%s\"\n",
 					 endtime,
 					 currflow->flow);
 			query[qlen] = '\0';
