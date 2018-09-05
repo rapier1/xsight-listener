@@ -35,8 +35,6 @@ void threaded_influx_write (struct ThreadWrite *);
  * use a UUID? If the listener restarts than any flows that continue
  * during the restart process will be given entirely new UUIDs and 
  * look like new flows. This methods avoids that problem. 
- * note: We still need to deal with flows that end *during* the time
- * that the listener is restarting
  */
 
 void generate_flow_id (struct ConnectionHash *flow,
@@ -406,19 +404,13 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 	uint64_t timestamp = 0;
 	char *influx_data;
 	int length;
-	/*char suffix[512];*/
 
 	/* originally we were setting the timestamp of the EndTime series to 0
 	   and then trying to use that to overwrite the original value of 0
 	   with the 'true' end time when the flow closed. This isn't working at all
 	   anymore. This was used to check for dead flows. We'll need a new method to 
-	   check for dead flows - cjr 8-15-2018*/
-	/* for end time we need to override the influx timestamp. we use this variable
-	 *  and we set everything to null so we don't get weird values. 
-	 */
-	/*char influxts[2];
-	  influxts[0] = '\0';
-	  influxts[1] = '\0';*/
+	   check for dead flows - cjr 8-15-2018
+	*/
 	
 	/* if cl is null then it's an EndTime so we don't need to do this
 	 * if it exists then we need to extract the timestamp from the 
@@ -426,39 +418,18 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 	 */
 	if (cl != NULL) {
 		timestamp = get_start_time(flow, cl, cid);
-		/* we need to create an EndTime entry when the flow is created so we can search
-		 * on it if necessary. We have to give it a 0 influx timestamp so it can be updated
-		 * when the flow ends */
-		/*length = snprintf (suffix, 512,
-				   "EndTime,type=flowdata value=0i,flow=\"%s\" 0\n",
-				   flow->flowid_char);*/
 	} else {
 		/* StartTimeStamp is in nanoseconds since epoch so we have to convert
 		 * time() to nsecs for the EndTime
 		 */
 		timestamp = time(NULL) * 1000000000;
-		/* in this case we are only writing the EndTime so the suffix is null but the 
-		 * influx timestamp is 0 */
-		/*influxts[0] = '0';*/
-		/*suffix[0] = '\0';*/
 	}
 	
 	/*create the time string*/
-	/*length = strlen (",type=flowdata value=i,flow=\"\" \n") 
-		+ strlen(time_marker)
-		+ SHA256_TEXT
-		+ strlen(suffix) + 22;*/ 
 	length = strlen (",type=flowdata value=i,flow=\"\" \n") 
 		+ strlen(time_marker)
 		+ SHA256_TEXT + 22;
 	influx_data = SAFEMALLOC(length);
-	/*snprintf(influx_data, length,
-		 "%s,type=flowdata value=%"PRIu64"i,flow=\"%s\" %s\n%s", 
-		 time_marker,
-		 timestamp,
-		 flow->flowid_char,
-		 influxts,
-		 suffix);*/
 	snprintf(influx_data, length,
 		 "%s,type=flowdata value=%"PRIu64"i,flow=\"%s\"", 
 		 time_marker,
@@ -489,7 +460,6 @@ void read_metrics (threadpool curlpool,
 	char estats_val[128];
 	int total_size = 0;
 	int i, size;
-	uint64_t timestamp = 0;
 	/* maximum observed size has been under 16k but lets be extra safe */
 	int MAX_LINE_SZ_METRIC = 24576;
 
@@ -519,13 +489,18 @@ void read_metrics (threadpool curlpool,
 	influx_data = SAFEMALLOC(MAX_LINE_SZ_METRIC);
 	*influx_data = '\0';
 
-	/* we're using the current polling period. 
+	/* XXXX we're using the current polling period. 
 	 * This gives us 1 second resolution which isn't awesome but it allows
 	 * us to lock all of the metric reads to the same timestamp which helps
-	 * when we are retreiving the data
+	 * when we are retreiving the data XXXX (9/4/2018)
 	 */
-	
-	//timestamp = flow->lastpoll * 1000000000; /*influx expects the timestamp to be in nanoseconds*/
+
+	/* I've changed this. The fear was that the timestamps would be needed 
+	 * to normalize  all of the metrics for a single set of metrics 
+	 * into 1 'slice' of data. This is A) Wrong as all of this is being written 
+	 * in one block with the same timestamp and B) Wrong because it was screwing
+	 * up the way data was being written. --CJR 9/4/2018
+	 */
 	
 	for (i = 0; i < esdata->length; i++) {
 		char temp_str[512];
@@ -549,12 +524,6 @@ void read_metrics (threadpool curlpool,
 			break;
 		} /*end switch*/
 		
-		size = snprintf(temp_str, 512, "%s%s%s,flow=\"%s\" %"PRIu64"\n",
-				estats_var_array[i].name,
-				tag_str,
-				estats_val,
-				flow->flowid_char,
-				timestamp);
 		size = snprintf(temp_str, 512, "%s%s%s,flow=\"%s\"\n",
 				estats_var_array[i].name,
 				tag_str,
@@ -579,6 +548,10 @@ void read_metrics (threadpool curlpool,
 	 * for every datapoint in the update series to the same value of 0
 	 */
 
+	/* honestly, I don't know if this is being used anymore. 
+	 * Need to review --CJR 9/5/2018
+	 */
+	
 	size = snprintf(update_str, 512,
 			"updated,type=flowdata value=%"PRIu64"i,flow=\"%s\" 0", 
 			timestamp,
