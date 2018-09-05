@@ -525,7 +525,7 @@ void read_metrics (threadpool curlpool,
 	 * when we are retreiving the data
 	 */
 	
-	timestamp = flow->lastpoll * 1000000000; /*influx expects the timestamp to be in nanoseconds*/
+	//timestamp = flow->lastpoll * 1000000000; /*influx expects the timestamp to be in nanoseconds*/
 	
 	for (i = 0; i < esdata->length; i++) {
 		char temp_str[512];
@@ -555,6 +555,11 @@ void read_metrics (threadpool curlpool,
 				estats_val,
 				flow->flowid_char,
 				timestamp);
+		size = snprintf(temp_str, 512, "%s%s%s,flow=\"%s\"\n",
+				estats_var_array[i].name,
+				tag_str,
+				estats_val,
+				flow->flowid_char);
 		temp_str[size] = '\0';
 
 		total_size += size;
