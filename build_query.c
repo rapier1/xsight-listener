@@ -554,7 +554,7 @@ void read_metrics (threadpool curlpool,
 	
 	size = snprintf(update_str, 512,
 			"updated,type=flowdata value=%"PRIu64"i,flow=\"%s\" 0", 
-			timestamp,
+			time(NULL),
 			flow->flowid_char);
 	update_str[size] = '\0';
 	total_size += size;
