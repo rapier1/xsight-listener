@@ -143,7 +143,8 @@ void threaded_path_trace (struct PathBuild *job) {
 	int ret = -1;
 	int size = 0;
 	int total_size = 0;
-
+	int long timestamp;
+	
 	memset(results, '\0', 32*45); /*initialize the results array to null */
 
 	/* determine if the *source* address is ipv4 or ipv6*/
@@ -201,10 +202,17 @@ void threaded_path_trace (struct PathBuild *job) {
 
 	/* iterate through each entry in the results array and craft an
 	 * influx happy string */
+	/* NB: The way this was originally written the nature of the batch job
+	 * meant that only the last entry would ever be written. So we have to craft a 
+	 * custom timestamp. This is okay because it's not tied to any specific time
+	 * slice in the metrics. So get the current time - turn it into influx precision
+	 * and add 1 for each hop. 
+	 */
+	timestamp = time(NULL) * 1000000000;
 	for (i = 1; i <= ttl; i++) {
 		size = snprintf(temp_str, 512,
-				"path,type=flowdata hop=%d value=\"%s\",flow=\"%s\"\n",
-				i, results[i], job->flowid_char);
+				"path,type=flowdata value=\"%s\",hop=%di,flow=\"%s\" %lu\n",
+				results[i], i, job->flowid_char, timestamp + i);
 		temp_str[size] = '\0';
 		total_size += size;
 
