@@ -22,3 +22,4 @@ uint64_t getTime(json_object *, int);
 int getIndex(json_object *, int);
 void getFlows(json_object *, int, bool);
 void find_difference();
+void clean_up();

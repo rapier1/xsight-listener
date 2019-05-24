@@ -112,7 +112,8 @@ void get_end_time () {
 	}
 	find_difference();
 	get_current_flows();
-	process_dead_flows();
+//	process_dead_flows();
+	clean_up(); /* go through all of the hashes and make sure we free everything in them */
 	/* and we are done */
 }
 
@@ -521,3 +522,27 @@ void process_dead_flows () {
 	}
 }
 
+/* go through each of the hashes created an ensure that they are all 
+   removed and done */
+void clean_up () {
+	log_debug("In cleanup\n");
+	struct DeadFlowHash *current_ethash, *current_sthash, *tmp;
+	/* start time hash */
+	/* end time hash */
+	if (HASH_COUNT(ethash) > 0) {
+		HASH_ITER(hh, ethash, current_ethash, tmp) {
+			log_debug("iter for ethash");
+			HASH_DEL(ethash,current_ethash);
+			free(current_ethash->flow);
+			free(current_ethash);
+		}
+	}
+	if (HASH_COUNT(sthash) > 0) {
+		HASH_ITER(hh, sthash, current_sthash, tmp) {
+			log_debug("iter for sthash");
+			HASH_DEL(sthash,current_sthash);
+			free(current_sthash->flow);
+			free(current_sthash);
+		}
+	}
+}
