@@ -37,59 +37,6 @@
 static volatile int threads_keepalive;
 static volatile int threads_on_hold;
 
-
-
-/* ========================== STRUCTURES ============================ */
-
-
-/* Binary semaphore */
-typedef struct bsem {
-	pthread_mutex_t mutex;
-	pthread_cond_t   cond;
-	int v;
-} bsem;
-
-
-/* Job */
-typedef struct job{
-	struct job*  prev;                   /* pointer to previous job   */
-	void   (*function)(void* arg);       /* function pointer          */
-	void*  arg;                          /* function's argument       */
-} job;
-
-
-/* Job queue */
-typedef struct jobqueue{
-	pthread_mutex_t rwmutex;             /* used for queue r/w access */
-	job  *front;                         /* pointer to front of queue */
-	job  *rear;                          /* pointer to rear  of queue */
-	bsem *has_jobs;                      /* flag as binary semaphore  */
-	int   len;                           /* number of jobs in queue   */
-} jobqueue;
-
-
-/* Thread */
-typedef struct thread{
-	int       id;                        /* friendly id               */
-	pthread_t pthread;                   /* pointer to actual thread  */
-	struct thpool_* thpool_p;            /* access to thpool          */
-} thread;
-
-
-/* Threadpool */
-typedef struct thpool_{
-	thread**   threads;                  /* pointer to threads        */
-	volatile int num_threads_alive;      /* threads currently alive   */
-	volatile int num_threads_working;    /* threads currently working */
-	pthread_mutex_t  thcount_lock;       /* used for thread count etc */
-	pthread_cond_t  threads_all_idle;    /* signal to thpool_wait     */
-	jobqueue  jobqueue;                  /* job queue                 */
-} thpool_;
-
-
-
-
-
 /* ========================== PROTOTYPES ============================ */
 
 
@@ -109,8 +56,6 @@ static void  bsem_reset(struct bsem *bsem_p);
 static void  bsem_post(struct bsem *bsem_p);
 static void  bsem_post_all(struct bsem *bsem_p);
 static void  bsem_wait(struct bsem *bsem_p);
-
-
 
 
 
@@ -265,9 +210,6 @@ void thpool_resume(thpool_* thpool_p) {
 int thpool_num_threads_working(thpool_* thpool_p){
 	return thpool_p->num_threads_working;
 }
-
-
-
 
 
 /* ============================ THREAD ============================== */
@@ -449,18 +391,12 @@ static void jobqueue_push(jobqueue* jobqueue_p, struct job* newjob){
 
 	}
 	jobqueue_p->len++;
-
 	bsem_post(jobqueue_p->has_jobs);
 	pthread_mutex_unlock(&jobqueue_p->rwmutex);
 }
 
-
 /* Get first job from queue(removes it from queue)
-<<<<<<< HEAD
- *
  * Notice: Caller MUST hold a mutex
-=======
->>>>>>> da2c0fe45e43ce0937f272c8cd2704bdc0afb490
  */
 static struct job* jobqueue_pull(jobqueue* jobqueue_p){
 

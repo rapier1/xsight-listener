@@ -112,7 +112,7 @@ void get_end_time () {
 	}
 	find_difference();
 	get_current_flows();
-//	process_dead_flows();
+	process_dead_flows();
 	clean_up(); /* go through all of the hashes and make sure we free everything in them */
 	/* and we are done */
 }
@@ -124,6 +124,7 @@ void get_end_time () {
 
 void find_difference () {
 	DeadFlowHash *currflow, *tempflow, *response;
+	int dead_flow_num = 0;
 	
 	HASH_ITER(hh, sthash, currflow, tempflow) {
 		HASH_FIND_STR(ethash, currflow->flow, response);
@@ -134,9 +135,11 @@ void find_difference () {
 			if (response == NULL) {
 				/* printf ("Could not find a match for %s\n", currflow->flow);*/
 				HASH_ADD_KEYPTR(hh, dfhash, currflow->flow, strlen(currflow->flow), currflow);
+				dead_flow_num++;
 			}
 		}
 	}
+	log_debug ("Number of dead flows: %d", dead_flow_num); 
 }
 
 
@@ -423,9 +426,6 @@ void get_current_flows () {
 			 * so delete it from our hash
 			 */
 			log_debug("Matched orphan flow with existing flow: %s", flowid);
-			HASH_DEL(dfhash, dfresult);
-			free (dfresult->flow);
-			free (dfresult);
 		}
 	}
 	/* anything left in the hash doesn't have an active flow 
@@ -452,6 +452,9 @@ Cleanup:
  * hash shoudl be empty and all of the dead flows should have 
  * somewhat valid EndTimes
  */
+/* because you screwed this up before. Do *not* delete/free from dfhash. These are
+   just key pointers to structures in sthash and ethash. If you free dfhash you end
+   up with double frees when you clean up st/ethash. Just ignore what you wrote above */
 void process_dead_flows () {
 	DeadFlowHash *currflow, *tempflow;
 	NetworksHash *currnet, *tempnet;
@@ -460,6 +463,8 @@ void process_dead_flows () {
 	int qlen;
 	CURLcode curl_res;
 	json_object *json_in = NULL;
+	int counter;
+	int dfhash_max = HASH_COUNT(dfhash);
 	
 	/* printf ("In process_dead_flows\n");*/
 	/* iterate through the networks hash
@@ -472,10 +477,13 @@ void process_dead_flows () {
 		 */
 		readcurl = currnet->conn[0];
 		writecurl = currnet->conn[1];
+		counter = 0;
 		HASH_ITER(hh, dfhash, currflow, tempflow) {
 			uint64_t endtime = 0;
 			if (currnet != currflow->network)
 				continue;
+
+			counter++;
 			/* get the time stamp from the last metric and use that as the EndTime*/
 			qlen = snprintf(query, 512,
 					"SELECT time, value FROM SegsIn WHERE flow ='%s' ORDER BY DESC LIMIT 1",
@@ -514,10 +522,7 @@ void process_dead_flows () {
 				log_error("Curl Failure for %s while updating orphan flows",
 					  curl_easy_strerror(curl_res));
 			else
-				log_debug("Closed orphan flow %s", currflow->flow);
-			HASH_DEL(dfhash, currflow);
-			free(currflow->flow);
-			free(currflow);
+				log_debug("Closed orphan flow %s (%d of %d)", currflow->flow, counter, dfhash_max);
 		}
 	}
 }
@@ -525,24 +530,29 @@ void process_dead_flows () {
 /* go through each of the hashes created an ensure that they are all 
    removed and done */
 void clean_up () {
-	log_debug("In cleanup\n");
+	log_debug("In dead flow cleanup\n");
 	struct DeadFlowHash *current_ethash, *current_sthash, *tmp;
-	/* start time hash */
+	int sthash_max = HASH_COUNT(sthash);
+	int ethash_max = HASH_COUNT(ethash);	
+	int counter = 0;
 	/* end time hash */
-	if (HASH_COUNT(ethash) > 0) {
-		HASH_ITER(hh, ethash, current_ethash, tmp) {
-			log_debug("iter for ethash");
-			HASH_DEL(ethash,current_ethash);
-			free(current_ethash->flow);
-			free(current_ethash);
-		}
+	HASH_ITER(hh, ethash, current_ethash, tmp) {
+		HASH_DEL(ethash,current_ethash);
+		free(current_ethash->flow);
+		free(current_ethash);
+		counter++;
+		log_debug("Cleared ethash item (%d of %d)", counter, ethash_max);
 	}
-	if (HASH_COUNT(sthash) > 0) {
-		HASH_ITER(hh, sthash, current_sthash, tmp) {
-			log_debug("iter for sthash");
-			HASH_DEL(sthash,current_sthash);
-			free(current_sthash->flow);
-			free(current_sthash);
-		}
+	/* start time hash */
+	counter = 0;
+	HASH_ITER(hh, sthash, current_sthash, tmp) {
+		log_debug("iter for sthash");
+		HASH_DEL(sthash,current_sthash);
+		free(current_sthash->flow);
+		free(current_sthash);
+		counter++;
+		log_debug("Cleared sthash item (%d of %d)", counter, sthash_max);
 	}
+	/* this should be empty so we just need to clear it */
+	//HASH_CLEAR(hh, dfhash);
 }

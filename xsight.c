@@ -382,7 +382,8 @@ int main(int argc, char *argv[]) {
 	Continue:
 		estats_val_data_free(&esdata);
 		estats_connection_list_free(&clist);
-		log_debug("Hash count: %d", hash_count_hash());
+		log_debug("Hash count: %d Curl Pool: %d, Trace Pool: %d", hash_count_hash(),
+			  curlpool->jobqueue.len, tracepool->jobqueue.len);
 		if (stats_count == 60) {
 			stats_count = 0;
 			log_info ("Scan #: %d; Current hash count: %d; Total Traceroutes: %d; Total Metrics: %d; Flow Hash Overhead: %ld",

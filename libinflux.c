@@ -93,7 +93,7 @@ void update_ssl_opts(influxConn *conn)
 		/* enable SSL */
 		curl_easy_setopt(conn->curl, CURLOPT_USE_SSL, CURLUSESSL_ALL);
 		/* set ssl peer verification on/off */
-		curl_easy_setopt(conn->curl, CURLOPT_SSL_VERIFYPEER, conn->ssl);
+		//curl_easy_setopt(conn->curl, CURLOPT_SSL_VERIFYPEER, conn->ssl);
 	}
 }
 
