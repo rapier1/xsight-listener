@@ -5,7 +5,7 @@ USE_LIBJSON=-ljson
 endif
 
 if DEBUG
-AM_CFLAGS =-g3 -O0
+AM_CFLAGS =-g3 -O0 -fsanitize=address
 AM_CXXFLAGS =-g3 -O0
 else
 AM_CFLAGS =-O3

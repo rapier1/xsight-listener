@@ -527,10 +527,10 @@ void process_dead_flows () {
 	}
 }
 
-/* go through each of the hashes created an ensure that they are all 
+/* go through each of the hashes created and ensure that they are all 
    removed and done */
 void clean_up () {
-	log_debug("In dead flow cleanup\n");
+	log_debug2("In dead flow cleanup\n");
 	struct DeadFlowHash *current_ethash, *current_sthash, *tmp;
 	int sthash_max = HASH_COUNT(sthash);
 	int ethash_max = HASH_COUNT(ethash);	
@@ -541,17 +541,16 @@ void clean_up () {
 		free(current_ethash->flow);
 		free(current_ethash);
 		counter++;
-		log_debug("Cleared ethash item (%d of %d)", counter, ethash_max);
+		log_debug2("Cleared ethash item (%d of %d)", counter, ethash_max);
 	}
 	/* start time hash */
 	counter = 0;
 	HASH_ITER(hh, sthash, current_sthash, tmp) {
-		log_debug("iter for sthash");
 		HASH_DEL(sthash,current_sthash);
 		free(current_sthash->flow);
 		free(current_sthash);
 		counter++;
-		log_debug("Cleared sthash item (%d of %d)", counter, sthash_max);
+		log_debug2("Cleared sthash item (%d of %d)", counter, sthash_max);
 	}
 	/* this should be empty so we just need to clear it */
 	//HASH_CLEAR(hh, dfhash);

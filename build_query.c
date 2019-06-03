@@ -111,7 +111,7 @@ void add_path_trace (threadpool curlpool,
 	
 	/* add it to the thread pool */
 	thpool_add_work(tracepool, (void*)threaded_path_trace, (void*)job);
-	//	log_debug("tracepool size is: %d", tracepool->jobqueue.len);
+		log_debug("tracepool size is: %d", tracepool->jobqueue.len);
 	
 Cleanup:
 	if (err != NULL) {
@@ -232,7 +232,7 @@ void threaded_path_trace (struct PathBuild *job) {
 
 	/* add this to the curl thread pool */
 	thpool_add_work(job->mythread, (void*)threaded_influx_write, (void*)influxjob);
-	//	log_debug("curlpool size is: %d", job->mythread->jobqueue.len);
+		log_debug("curlpool size is: %d", job->mythread->jobqueue.len);
 	
 	free((void *)job->local_addr);
 	free((void *)job->rem_addr);
@@ -346,7 +346,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	job->network = hash_find_curl_handle(flow->netname);
 	job->data = &influx_data[0];
 	thpool_add_work(curlpool, (void*)threaded_influx_write, (void*)job);
-	//	log_debug("curlpool size is: %d", curlpool->jobqueue.len);
+		log_debug("curlpool size is: %d", curlpool->jobqueue.len);
 	/* NB: job and influx data are free'd in threaded_influx_write */
 Cleanup:
 	if (err != NULL) {
@@ -455,7 +455,7 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 	job->network = hash_find_curl_handle(flow->netname);
 	job->data = &influx_data[0];
 	thpool_add_work(curlpool, (void*)threaded_influx_write, (void*)job);
-	//	log_debug("curlpool size is: %d", curlpool->jobqueue.len);
+		log_debug("curlpool size is: %d", curlpool->jobqueue.len);
 	/* NB: job and influx data are free'd in threaded_influx_write */
 }
 
@@ -582,7 +582,7 @@ void read_metrics (threadpool curlpool,
 	job->network = hash_find_curl_handle(flow->netname);
 	job->data = &influx_data[0];
 	thpool_add_work(curlpool, (void*)threaded_influx_write, (void*)job);
-	//	log_debug("curlpool size is: %d", curlpool->jobqueue.len);
+	log_debug("curlpool size is: %d", curlpool->jobqueue.len);
 	/* NB: job is free'd in threaded_influx_write */
 
 Cleanup:

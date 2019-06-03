@@ -69,12 +69,12 @@ void log_info(const char* message, ...) {
 }
 
 void log_debug(const char* message, ...) {  
-	if (!debugflag)
+	if (debugflag < 1)
 		return;
 	va_list args;   
 	LogLevels level;
 	level = DEBUG;
-
+	
 	va_start(args, message);    
 	log_format("debug", message, level, args);     
 	va_end(args); 

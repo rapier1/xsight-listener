@@ -164,7 +164,10 @@ void set_debug(bool debug){
 size_t writeCallback(char *contents, size_t size, size_t nmemb, influxConn *conn){
 	influxConn *inbound = conn;
 	size_t realsize = size * nmemb;
-	
+
+	if (influx_debug)
+		printf("writeCallBack: response_size: %d\n", inbound->response_size);
+
 	/*allocate memory for new data */
 	inbound->response = realloc(inbound->response, inbound->response_size + realsize + 1);
 	if (inbound->response == NULL) {
@@ -244,20 +247,21 @@ CURLcode sendPost(influxConn *conn, char *url, char *data){
     CURLcode resultCode = {0};
     if(influx_debug){printf("[post]\n");}
     if(curl){
-        curl_easy_setopt(curl, CURLOPT_URL, url);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long)strlen(data));
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, conn);
-        resultCode = curl_easy_perform(curl);
+	    curl_easy_setopt(curl, CURLOPT_URL, url);
+	    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long)strlen(data));
+	    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
+	    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
+	    curl_easy_setopt(curl, CURLOPT_WRITEDATA, conn);
+	    resultCode = curl_easy_perform(curl);
     }
     free(url);
     if(influx_debug){
-        if(resultCode != CURLE_OK)
-            printf("[post] CURL ERROR\n");
-        else
-            printf("[post] CURL OK\n");
+	    if(resultCode != CURLE_OK)
+		    printf("[post] CURL ERROR\n");
+	    else
+		    printf("[post] CURL OK\n");
     }
+    conn->response_size = 0;
     return resultCode;
 }
 
@@ -285,5 +289,6 @@ CURLcode sendGet(influxConn *conn, char *url, char *data){
 	    resultCode = curl_easy_perform(curl);
     }
     free(url);
+    conn->response_size = 0;
     return resultCode;
 }
