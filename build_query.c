@@ -162,6 +162,7 @@ void threaded_path_trace (struct PathBuild *job) {
 
 	ret = getaddrinfo(job->rem_addr, NULL, &hint, &remote_address);
 	if (ret < 0 ) {
+		freeaddrinfo(local_address);
 		freeaddrinfo(remote_address);
 		log_error("Badly formed remote address in path_trace: %s",
 			  job->local_addr);
@@ -174,7 +175,7 @@ void threaded_path_trace (struct PathBuild *job) {
 	 * list that we can go thorugh
 	 */
 	if (local_address->ai_family != remote_address->ai_family) {
-        freeaddrinfo(remote_address);
+		freeaddrinfo(remote_address);
 		freeaddrinfo(local_address);
 		log_error("path_trace: Local and remote address families do not match");
 		goto Cleanup;
@@ -217,12 +218,15 @@ void threaded_path_trace (struct PathBuild *job) {
 		temp_str[size] = '\0';
 		total_size += size;
 
-		if (total_size < MAX_LINE_SZ_PATH) {
+		if (total_size < MAX_LINE_SZ_PATH)
 			strncat(influx_data, temp_str, size);
-			influx_data[total_size] = '\0';
-		}
+		else 
+			strncat(influx_data, temp_str, MAX_LINE_SZ_PATH - total_size);
 	}
 
+	// NULL terminate the string
+	influx_data[strlen(influx_data)] = '\0';
+	
 	/* create the job struct for the curl write. This is freed in that function*/
 	influxjob = SAFEMALLOC(sizeof(struct ThreadWrite));
 	influxjob->action = SAFEMALLOC(32);

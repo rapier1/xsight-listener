@@ -49,7 +49,7 @@ int options_get_config(char *path, int tmp_debug) {
 	/* start going through the cfg file */
 	if (config_lookup_int(&cfg, "debug", &value)) {
 		debugflag = value;
-		/* lets the user override the debig level from the command line */
+		/* lets the user override the debug level from the command line */
 		if (tmp_debug != -1)
 			debugflag = tmp_debug;
 		log_debug("Debug flag: %d",

@@ -194,7 +194,9 @@ Cleanup:
 int exclude_app (char* appname, char** apps, int index) {
 	int i;
 	for (i = 0; i < index; i++) {
+		log_debug2 ("Exclude app: %s, %s", appname, apps[i]);
 		if (strcmp(appname, apps[i]) == 0) {
+			log_debug2 ("Matched!");
 			return 1;
 		}
 	}

@@ -45,6 +45,7 @@ NetworksHash *global_current_network;
  * step through each network connection and get all flows
  * that have an EndTime of 0. Pass that jsonObject to the parser
  * and build a hash of them
+ * only look at flows in the past day - cjr 6/5/2019
  */
 void get_end_time () {
 	struct NetworksHash *current, *temp;
@@ -66,7 +67,7 @@ void get_end_time () {
 		
 		/* build the query */
 		snprintf(query, 512,
-			 "SELECT flow,value FROM EndTime");
+			 "SELECT flow,value FROM EndTime WHERE time > now() - 1d");
 		curl_res = influxQuery(mycurl, query);
 		/* if this fails go to the next connection but don't fail. */
 		if (curl_res != CURLE_OK) {
@@ -90,7 +91,7 @@ void get_end_time () {
 		
 		/* build the query */
 		snprintf(query, 512,
-			 "SELECT flow,value FROM StartTime");
+			 "SELECT flow,value FROM StartTime WHERE time > now() - 1d");
 		curl_res = influxQuery(mycurl, query);
 		/* if this fails go to the next connection but don't fail. */
 		if (curl_res != CURLE_OK) {

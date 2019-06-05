@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
 		log_error ("SIGINT handler not functional");
 	}
 
-	while ((opt = getopt(argc, argv, "d:f:hD")) != -1) {
+	while ((opt = getopt(argc, argv, "d:f:hDv")) != -1) {
 		switch (opt) {
 		case 'h':
 			printf("xsight -f[config filepath] -d[debug level [0|1|2]] -D(daemonize)\n\n");
@@ -179,6 +179,10 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'D':
 			daemonize = 1;
+			break;
+		case 'v':
+			printf("XSight Listener version %.2f\n", XSIGHT_VERSION);
+			return 1;
 		default:
 			break;
 		}
@@ -214,12 +218,14 @@ int main(int argc, char *argv[]) {
 		syslog(LOG_INFO, "Starting xsight listener in daemon mode");
 	}	
 
-
+	
 	if (options_get_config(config_filepath, tmp_debug) == -1) {
 		log_error("Could not find or process configuration file. Exiting."); 
 		exit(EXIT_FAILURE);
 	}
 
+	log_debug("XSight Listener version %.2f", XSIGHT_VERSION);
+		
 	libinflux_init();
 
 	/* iterate over the various networks and generate a curl handle for each of them */
@@ -335,6 +341,10 @@ int main(int argc, char *argv[]) {
 		}
 		/* iterate over all of the flows we've collected*/
 		HASH_ITER(hh, activeflows, temphash, vtemphash) {
+			if (temphash->exclude == true) {
+				log_debug2 ("Skipping excluded hash. CID: %d, PID: %d", temphash->cid, temphash->pid);
+				continue;
+			}
 			/* delete stale flows from the hash */
 			if (temphash->seen == false || temphash->closed == true) {
 				if (hash_delete_flow(temphash->cid) != 1) {

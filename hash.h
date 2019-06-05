@@ -30,6 +30,7 @@
 
 typedef struct ConnectionHash {
 	int cid;            /* connection id from estats*/
+	int pid;            /* process id*/
 	uint64_t lastpoll;  /* last polling period in seconds */
 	int age;            /* age of flow in seconds (maximum age of ~68 years) */
         bool seen;          /* boolean - have we seen this previously */
