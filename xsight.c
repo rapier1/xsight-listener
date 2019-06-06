@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
 	threadpool curlpool = NULL;
 	threadpool tracepool = NULL;
 	char *config_filepath;
-	int i, opt, tmp_debug, stats_count;
+	int i, opt, tmp_debug, stats_count, restart_curl_count;
 	pid_t pid, sid;
 	uint32_t j, trace_count, metric_count;
 	
@@ -161,7 +161,8 @@ int main(int argc, char *argv[]) {
 	trace_count = 0;
 	metric_count = 0;
 	stats_count = 0;
-
+	restart_curl_count = 0;
+	
 	if (signal(SIGINT, sighandler) == SIG_ERR) {
 		log_error ("SIGINT handler not functional");
 	}
@@ -395,11 +396,23 @@ int main(int argc, char *argv[]) {
 		log_debug("Hash count: %d Curl Pool: %d, Trace Pool: %d", hash_count_hash(),
 			  curlpool->jobqueue.len, tracepool->jobqueue.len);
 		if (stats_count == 60) {
+			restart_curl_count++;
 			stats_count = 0;
 			log_info ("Scan #: %d; Current hash count: %d; Total Traceroutes: %d; Total Metrics: %d; Flow Hash Overhead: %ld",
 				  j, hash_count_hash(), trace_count,
 				  metric_count, HASH_OVERHEAD(hh, activeflows));
+			
 		}
+		/* once an hour kill the curl handles and restart them. Maybe this wil lhelp with memory issues */
+		if (restart_curl_count == 60) {
+			log_info ("Restarting curl handles");
+			restart_curl_count = 0;
+			thpool_wait(curlpool); /* drain the curlpool */
+			hash_close_curl_handles(); /* close all of the curl handles */
+			hash_get_curl_handles(); /* get new curl handles */
+			log_info ("Curl handles restarted");
+		}
+
 		if (exitnow)
 			goto Cleanup;
 		/* sleep(options.conn_interval); */
