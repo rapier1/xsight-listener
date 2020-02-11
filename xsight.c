@@ -342,10 +342,6 @@ int main(int argc, char *argv[]) {
 		}
 		/* iterate over all of the flows we've collected*/
 		HASH_ITER(hh, activeflows, temphash, vtemphash) {
-			if (temphash->exclude == true) {
-				log_debug2 ("Skipping excluded hash. CID: %d, PID: %d", temphash->cid, temphash->pid);
-				continue;
-			}
 			/* delete stale flows from the hash */
 			if (temphash->seen == false || temphash->closed == true) {
 				if (hash_delete_flow(temphash->cid) != 1) {
@@ -355,6 +351,8 @@ int main(int argc, char *argv[]) {
 			}
 
 			/* we only care about flows that live longer than our mininmum */
+			/* as a note: we neverincrement the age of exluded flows so this check
+			 * will also skip excluded flows as well as young flows */
 			if (temphash->age <= options.conn_interval) 
 				continue;
 			
@@ -444,6 +442,6 @@ int main(int argc, char *argv[]) {
 
 	if (daemonize)
 		closelog();
-
+	exit(EXIT_SUCCESS);
 	return EXIT_SUCCESS;
 }
