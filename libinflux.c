@@ -276,7 +276,7 @@ CURLcode sendGet(influxConn *conn, char *url, char *data){
 		    char *encoded_data = curl_easy_escape(curl, data, strlen(data));
 		    url = realloc(url, sizeof(char *) * ((int) strlen(url) + strlen(encoded_data) + 1) );
 		    if(url){
-			    strncat(url, encoded_data, strlen(encoded_data));
+		      strncat(url, encoded_data, sizeof(url) - strlen(encoded_data) - 1);
 			    curl_free(encoded_data);
 		    }
 	    }

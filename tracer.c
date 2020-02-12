@@ -72,7 +72,7 @@ int trace4(char *dest, char *src, char ips[30][45]) {
 		perror ("Failed to bind to IP");
 		exit(1);
 	}
-	strncpy(packet, message, strlen(message));
+	memcpy(packet, message, strlen(message) + 1);
 	packetsize = strlen(packet);
 
 	FD_ZERO(&readfds);
@@ -99,12 +99,12 @@ int trace4(char *dest, char *src, char ips[30][45]) {
 			recvbuf[number] = '\0';
 			icmp = (struct icmphdr *)(recvbuf+sizeof(struct iphdr));
 			inet_ntop(AF_INET, &srcaddr.sin_addr.s_addr, ipstr, sizeof(ipstr));
-			strncpy(ips[ttl], ipstr, strlen(ipstr));
+			memcpy(ips[ttl], ipstr, strlen(ipstr) + 1);
 			ips[ttl][strlen(ipstr)] = '\0';
 		} else {
 			/* if ret is 0 the sock is removed from the FD_SET*/
 			FD_SET(icmp_sock, &readfds);
-			strncpy(ips[ttl], "*\0", 2);
+			memcpy(ips[ttl], "*\0", 2);
 			continue;
 		}
 		if(icmp->type==ICMP_TIME_EXCEEDED && icmp->code==ICMP_EXC_TTL)
@@ -173,7 +173,7 @@ int trace6(char *dest, char *src, char ips[30][45]) {
 	timeout.tv_sec = 1;
 	timeout.tv_usec = 0;
 
-	strncpy(packet, message, strlen(message));
+	memcpy(packet, message, strlen(message) + 1);
 	packetsize = strlen(packet);
 
        	for (ttl=1; ttl <=max_ttl; ttl++) {
@@ -198,12 +198,12 @@ int trace6(char *dest, char *src, char ips[30][45]) {
 			icmp = (struct icmphdr *)recvbuf;
 			
 			inet_ntop(AF_INET6, &srcaddr.sin6_addr, dipstr, sizeof(dipstr));
-			strncpy(ips[ttl], dipstr, strlen(dipstr));
+			memcpy(ips[ttl], dipstr, strlen(dipstr) + 1);
 			ips[ttl][strlen(dipstr)] = '\0';
 		} else {
 			/* if ret is 0 the sock is removed from the FD_SET*/
 			FD_SET(icmp_sock, &readfds);
-			strncpy(ips[ttl], "*\0", 2);
+		        memcpy(ips[ttl], "*\0", 2);
 			continue;
 		}
 

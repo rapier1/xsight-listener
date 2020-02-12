@@ -199,7 +199,7 @@ void threaded_path_trace (struct PathBuild *job) {
 
 	/* init the final command string for influx*/
 	/* this is freed in the threaded_influx_write function*/
-	influx_data = SAFEMALLOC(MAX_LINE_SZ_PATH);
+	influx_data = SAFEMALLOC(MAX_LINE_SZ_PATH+1);
 	*influx_data = '\0';
 
 	/* iterate through each entry in the results array and craft an
@@ -221,7 +221,7 @@ void threaded_path_trace (struct PathBuild *job) {
 		if (total_size < MAX_LINE_SZ_PATH)
 			strncat(influx_data, temp_str, size);
 		else 
-			strncat(influx_data, temp_str, MAX_LINE_SZ_PATH - total_size);
+			strncat(influx_data, temp_str, MAX_LINE_SZ_PATH - strlen(influx_data) - 1);
 	}
 
 	// NULL terminate the string
