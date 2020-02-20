@@ -33,8 +33,6 @@
 #include "thpool.h"
 #include "dead_flow_check.h"
 
-#define NUM_THREADS 12 /* number of threads in pool */
-
 typedef struct CmdLineCID {
 	int cid;
 	char cmdline[256];

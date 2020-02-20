@@ -25,8 +25,10 @@
 #include "libinflux.h"
 #include "parse.h"
 
-
 #define SHA256_TEXT SHA256_DIGEST_LENGTH * 2
+#define NUM_THREADS 12 /* used here so defined here. This header 
+			* is included in xsight.h so it shoudl pick up 
+			* wherever we need it. */
 
 typedef struct ConnectionHash {
 	int cid;            /* connection id from estats*/
@@ -56,7 +58,7 @@ typedef struct NetworksHash {
 	const char *influx_password;
 	const char *influx_user;
 	char **net_addrs;
-	influxConn *conn[10];
+	influxConn *conn[NUM_THREADS]; /* Must be >= to the number of threads we want */
 	UT_hash_handle hh;
 } NetworksHash;
 
