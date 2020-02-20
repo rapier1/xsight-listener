@@ -125,7 +125,6 @@ void get_end_time () {
 
 void find_difference () {
 	DeadFlowHash *currflow, *tempflow, *response;
-	int dead_flow_num = 0;
 	
 	HASH_ITER(hh, sthash, currflow, tempflow) {
 		HASH_FIND_STR(ethash, currflow->flow, response);
@@ -136,11 +135,10 @@ void find_difference () {
 			if (response == NULL) {
 				/* printf ("Could not find a match for %s\n", currflow->flow);*/
 				HASH_ADD_KEYPTR(hh, dfhash, currflow->flow, strlen(currflow->flow), currflow);
-				dead_flow_num++;
 			}
 		}
 	}
-	log_debug ("Number of dead flows: %d", dead_flow_num); 
+	log_debug ("Number of dead flows: %d", HASH_COUNT(dfhash)); 
 }
 
 

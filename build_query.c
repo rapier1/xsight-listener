@@ -644,9 +644,10 @@ void threaded_influx_write (struct ThreadWrite *job) {
 					(char *)job->network->influx_password, 
 					job->network->verify_ssl); 
 		if ((curl_res = influxWrite(failcurl, job->data) != CURLE_OK)) {
-			log_error("CURL failure recovery failed: %s for %s",
+			log_error("CURL failure recovery failed: %s for %s (%s)",
 				  curl_easy_strerror(curl_res),
-				  job->action);
+				  job->action,
+				  job->network->influx_host_url););
 			free_conn(failcurl);
 			goto Error;
 		} else {
