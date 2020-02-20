@@ -13,7 +13,7 @@ AM_CXXFLAGS =-O3
 endif
 
 AM_CFLAGS += -Wall -Wextra -std=gnu11 -fgnu89-inline -DXOPEN_SOURCE -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free
-AM_LDFLAGS= -lestats -lcurl -lconfig -lpthread -lcrypto $(USE_LIBJSON) -ltcmalloc
+AM_LDFLAGS= -lestats -lcurl -lconfig -lpthread -lcrypto $(USE_LIBJSON)  -ljemalloc
 bin_PROGRAMS = xsight
 xsight_SOURCES= xsight.c hash.c build_query.c options.c libinflux.c \
 		debug.c parse.c thpool.c tracer.c dead_flow_check.c \

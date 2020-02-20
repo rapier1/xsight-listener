@@ -111,7 +111,6 @@ void add_path_trace (threadpool curlpool,
 	
 	/* add it to the thread pool */
 	thpool_add_work(tracepool, (void*)threaded_path_trace, (void*)job);
-		log_debug("tracepool size is: %d", tracepool->jobqueue.len);
 	
 Cleanup:
 	if (err != NULL) {
@@ -199,7 +198,7 @@ void threaded_path_trace (struct PathBuild *job) {
 
 	/* init the final command string for influx*/
 	/* this is freed in the threaded_influx_write function*/
-	influx_data = SAFEMALLOC(MAX_LINE_SZ_PATH+1);
+	influx_data = SAFEMALLOC(sizeof(char) * MAX_LINE_SZ_PATH+1);
 	*influx_data = '\0';
 
 	/* iterate through each entry in the results array and craft an
@@ -229,14 +228,13 @@ void threaded_path_trace (struct PathBuild *job) {
 	
 	/* create the job struct for the curl write. This is freed in that function*/
 	influxjob = SAFEMALLOC(sizeof(struct ThreadWrite));
-	influxjob->action = SAFEMALLOC(32);
+	influxjob->action = SAFEMALLOC(sizeof(char) * 32);
 	snprintf(influxjob->action, 32, "Added Path: %d", job->cid);
 	influxjob->network = hash_find_curl_handle(job->netname);
 	influxjob->data = &influx_data[0];
 
 	/* add this to the curl thread pool */
 	thpool_add_work(job->mythread, (void*)threaded_influx_write, (void*)influxjob);
-		log_debug("curlpool size is: %d", job->mythread->jobqueue.len);
 	
 	free((void *)job->local_addr);
 	free((void *)job->rem_addr);
@@ -268,7 +266,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	Chk(estats_connection_tuple_as_strings(&asc, &conn->tuple));
 
 	/* init the final command string for influx*/
-	influx_data = SAFEMALLOC(MAX_LINE_SZ_FLOW);
+	influx_data = SAFEMALLOC(sizeof(char) * MAX_LINE_SZ_FLOW + 1);
 	*influx_data = '\0';
 
 	/* create the flowid */
@@ -330,7 +328,7 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	if (total_size < MAX_LINE_SZ_FLOW)
 		strncat(influx_data, temp_str, size);
 
-	/* add the analyzed sereis */
+	/* add the analyzed series */
 	size = snprintf(temp_str, 512, "analyzed%s0i,flow=\"%s\"\n", tag_str,
 		flow->flowid_char);
 	temp_str[size] = '\0';
@@ -345,12 +343,11 @@ void add_flow_influx(threadpool curlpool, ConnectionHash *flow, struct estats_co
 	 */
 	
 	job = SAFEMALLOC(sizeof(struct ThreadWrite));
-	job->action = SAFEMALLOC(32);
+	job->action = SAFEMALLOC(sizeof(char) * 32);
 	snprintf(job->action, 32, "Added Flow: %d", conn->cid);
 	job->network = hash_find_curl_handle(flow->netname);
 	job->data = &influx_data[0];
 	thpool_add_work(curlpool, (void*)threaded_influx_write, (void*)job);
-		log_debug("curlpool size is: %d", curlpool->jobqueue.len);
 	/* NB: job and influx data are free'd in threaded_influx_write */
 Cleanup:
 	if (err != NULL) {
@@ -372,7 +369,7 @@ uint64_t get_start_time (struct ConnectionHash *flow, struct estats_nl_client *c
 	int i;
 	struct estats_mask time_mask;	
 	struct estats_val_data* esdata = NULL;
-	struct estats_error * err = NULL;
+	struct estats_error* err = NULL;
 	
 	time_mask.masks[0] = 1UL << 12;/*perf*/
 	time_mask.masks[1] = 0;        /*path*/
@@ -387,18 +384,26 @@ uint64_t get_start_time (struct ConnectionHash *flow, struct estats_nl_client *c
 	Chk(estats_nl_client_set_mask(cl, &time_mask));
 	Chk(estats_val_data_new(&esdata));
 	Chk(estats_read_vars(esdata, cid, cl));
-	for (i = 0; i < esdata->length; i++) {
-		if (esdata->val[i].masked)
-			continue;		
-		timestamp = esdata->val[i].uv64 * 1000; /*convert to ns*/
-	}
-Cleanup:
+	/* the timestamp should always be the 12th element in the array 
+	 * so we don't need the loop below. However, we are keeping the code
+	 * in place just in case we need to revisit this. CJR - 2/20/2020 
+	 */ 
+	/* for (i = 0; i < esdata->length; i++) {		 */
+	/* 	if (esdata->val[i].masked) */
+	/* 		continue;		 */
+	/* 	timestamp = esdata->val[i].uv64 * 1000; /\*convert to ns*\/ */
+	/* 	log_info ("estats timestamp index number is %d", i); */
+	/* } */
+	timestamp = esdata->val[12].uv64 * 1000; /*convert to ns*/
+
+Cleanup:	
 	estats_val_data_free(&esdata);
 	if (err != NULL) {
 		log_error("%s:\t%s\t%s", flow->flowid_char, 
 			  estats_error_get_extra(err), 
 			  estats_error_get_message(err));
 		estats_error_free(&err);
+		return -1; /* indicate timestamp errors in the data */
 	}		
 	return timestamp;
 }
@@ -444,7 +449,7 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 	length = strlen (",type=flowdata value=i,flow=\"\" \n") 
 		+ strlen(time_marker)
 		+ SHA256_TEXT + 22;
-	influx_data = SAFEMALLOC(length);
+	influx_data = SAFEMALLOC(sizeof(char) * length);
 	snprintf(influx_data, length,
 		 "%s,type=flowdata value=%"PRIu64"i,flow=\"%s\"", 
 		 time_marker,
@@ -459,7 +464,6 @@ void add_time(threadpool curlpool, struct ConnectionHash *flow, struct estats_nl
 	job->network = hash_find_curl_handle(flow->netname);
 	job->data = &influx_data[0];
 	thpool_add_work(curlpool, (void*)threaded_influx_write, (void*)job);
-		log_debug("curlpool size is: %d", curlpool->jobqueue.len);
 	/* NB: job and influx data are free'd in threaded_influx_write */
 }
 
@@ -502,7 +506,7 @@ void read_metrics (threadpool curlpool,
 	tag_str[size] = '\0';
 	
 	/* init the final command string for influx*/
-	influx_data = SAFEMALLOC(MAX_LINE_SZ_METRIC);
+	influx_data = SAFEMALLOC(sizeof(char) * MAX_LINE_SZ_METRIC);
 	*influx_data = '\0';
 
 	/* XXXX we're using the current polling period. 
@@ -556,6 +560,15 @@ void read_metrics (threadpool curlpool,
 		influx_data[total_size] = '\0';
 	}
 
+	estats_val_data_free(&esdata); /* done with the estats data struct */
+	if (err != NULL) {
+		log_error("%s:\t%s\t%s", flow->flowid_char, 
+			  estats_error_get_extra(err), 
+			  estats_error_get_message(err));
+		estats_error_free(&err);
+		free(influx_data);
+		goto Cleanup; /* if there is an error don't spawn a job */
+	}
 
 	/* Add a line for the update field in the flowdata 
 	 * influx doesn't have a method to update an existing datapoint 
@@ -581,22 +594,14 @@ void read_metrics (threadpool curlpool,
 	influx_data[total_size] = '\0';
 
 	job = SAFEMALLOC(sizeof(struct ThreadWrite));
-	job->action = SAFEMALLOC(32);
+	job->action = SAFEMALLOC(sizeof(char) * 32);
 	snprintf(job->action, 32, "Added Metrics: %d", flow->cid);
 	job->network = hash_find_curl_handle(flow->netname);
 	job->data = &influx_data[0];
 	thpool_add_work(curlpool, (void*)threaded_influx_write, (void*)job);
-	log_debug("curlpool size is: %d", curlpool->jobqueue.len);
 	/* NB: job is free'd in threaded_influx_write */
-
 Cleanup:
-	estats_val_data_free(&esdata);
-	if (err != NULL) {
-		log_error("%s:\t%s\t%s", flow->flowid_char, 
-			  estats_error_get_extra(err), 
-			  estats_error_get_message(err));
-		estats_error_free(&err);
-	}
+	; /* required label from estats */
 }
 
 /* this is the function we use to add jobs to the thread pool */
@@ -606,7 +611,7 @@ void threaded_influx_write (struct ThreadWrite *job) {
 	CURLcode curl_res;
 	influxConn *mycurl = NULL;
 	int i;
-	
+
        /* lock this thread while we are looking for a handle from the pool */
        pthread_mutex_lock(&lock);
        for (i = 0; i < NUM_THREADS; i++) {
@@ -618,13 +623,12 @@ void threaded_influx_write (struct ThreadWrite *job) {
                }
        }
        pthread_mutex_unlock(&lock);
-       
+
        if (mycurl == NULL) {
                log_error("Could not get valid curl handle for database write in threaded_influx_write");
                goto Error;
        }
 
-	
 	if ((curl_res = influxWrite(mycurl, job->data) != CURLE_OK)) {
 		log_error("CURL failure: %s for %s",
 			  curl_easy_strerror(curl_res),

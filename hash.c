@@ -49,7 +49,7 @@ void hash_close_curl_handles() {
 	struct NetworksHash *current, *temp;
 	HASH_ITER(hh, networks, current, temp) {
 		int i;
-		for (i = 0; i < NUM_THREADS; i++) 
+		for (i = 0; i < NUM_THREADS; i++)
 			free_conn(current->conn[i]);
 	}
 }
@@ -65,7 +65,7 @@ int hash_get_curl_handles () {
 		int i = 0;
 		/* create the connection */
 
-		for (i = 0; i<NUM_THREADS; i++) {
+		for (i = 0; i < NUM_THREADS; i++) {
 			current->conn[i] = create_conn ((char *)current->influx_host_url,  
 							(char *)current->influx_database,  
 							(char *)current->influx_user,  

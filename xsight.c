@@ -391,25 +391,39 @@ int main(int argc, char *argv[]) {
 	Continue:
 		estats_val_data_free(&esdata);
 		estats_connection_list_free(&clist);
-		log_debug("Hash count: %d Curl Pool: %d, Trace Pool: %d", hash_count_hash(),
-			  curlpool->jobqueue.len, tracepool->jobqueue.len);
 		if (stats_count == 60) {
 			restart_curl_count++;
 			stats_count = 0;
 			log_info ("Scan #: %d; Current hash count: %d; Total Traceroutes: %d; Total Metrics: %d; Flow Hash Overhead: %ld",
 				  j, hash_count_hash(), trace_count,
 				  metric_count, HASH_OVERHEAD(hh, activeflows));
+			log_info ("Curl job queue: %d; Traceroute job queue: %d",
+				  thpool_jobqueue_length(curlpool),
+				  thpool_jobqueue_length(tracepool));
 			
 		}
-		/* once an hour kill the curl handles and restart them. Maybe this wil lhelp with memory issues */
-		if (restart_curl_count == 60) {
-			log_info ("Restarting curl handles");
-			restart_curl_count = 0;
-			thpool_wait(curlpool); /* drain the curlpool */
-			hash_close_curl_handles(); /* close all of the curl handles */
-			hash_get_curl_handles(); /* get new curl handles */
-			log_info ("Curl handles restarted");
-		}
+		/* once an hour kill the curl handles and restart them. Maybe this will help with memory issues */
+		/* that didn't help with the memory issues so we are going to comment this 
+		 * out. We aren't deleting it as I may want to revisit this at some
+		 * point - CJR 2/20/2020
+		 */
+		/* if (restart_curl_count == -1) { */
+		/* 	log_info ("Restarting curl handles"); */
+		/* 	restart_curl_count = 0; */
+		/* 	log_info ("Waiting on curlpool"); */
+		/* 	thpool_wait(curlpool); /\* drain the curlpool *\/ */
+		/* 	log_info ("Waiting on tracepool"); */
+		/* 	thpool_wait(tracepool); */
+		/* 	hash_close_curl_handles(); /\* close all of the curl handles *\/ */
+		/* 	log_info("detsroying pools"); */
+		/* 	thpool_destroy(curlpool); */
+		/* 	thpool_destroy(tracepool); */
+		/* 	log_info ("initializing pools"); */
+		/* 	curlpool = thpool_init(NUM_THREADS); */
+		/* 	tracepool = thpool_init(NUM_THREADS); */
+		/* 	hash_get_curl_handles(); /\* get new curl handles *\/ */
+		/* 	log_info ("Curl handles restarted");			 */
+		/* } */
 
 		if (exitnow)
 			goto Cleanup;
@@ -422,6 +436,12 @@ int main(int argc, char *argv[]) {
 
 	/* destroy the threadpools */
 	/* have to do this before we close the curl handles */
+	log_info("Closing down.");
+	log_info ("Waiting for curl threadpool queue to drain.");
+	thpool_wait(curlpool);
+	log_info ("Waiting for traceroute threadpool queue to drain.");
+	thpool_wait(tracepool);
+	log_info ("Detsroying threadpools.");
 	thpool_destroy(curlpool);
 	thpool_destroy(tracepool);
 	

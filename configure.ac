@@ -54,6 +54,9 @@ AC_SEARCH_LIBS([SHA256_Init], [crypto], [], [
 AC_SEARCH_LIBS([json_tokener_parse_ex], [json-c json], [], [
         echo "JSON-C (fedoa) and/or LibJson (debian) library ) is missing."
         exit -1])
+AC_SEARCH_LIBS([mallocx], [jemalloc], [], [
+	echo "Missing jemalloc. Install jemalloc from source or package manager."
+	exit -1])
 AC_CHECK_LIB([json-c], [json_tokener_parse_ex], [LIBJSONC=true], [], [])
 AM_CONDITIONAL([LINK_LIBJSONC], [test x$LIBJSONC = xtrue])
 AC_CHECK_LIB([json], [json_tokener_parse_ex], [LIBJSON=true], [], [])
