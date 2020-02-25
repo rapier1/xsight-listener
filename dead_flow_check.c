@@ -485,7 +485,7 @@ void process_dead_flows () {
 			counter++;
 			/* get the time stamp from the last metric and use that as the EndTime*/
 			qlen = snprintf(query, 512,
-					"SELECT time, value FROM SegsIn WHERE flow ='%s' ORDER BY DESC LIMIT 1",
+					"SELECT time, value FROM SegsIn WHERE flow ='%s' AND time > now()-24h ORDER BY DESC LIMIT 1",
 					currflow->flow);
 			query[qlen] = '\0';
 			readcurl->response_size = 0;
